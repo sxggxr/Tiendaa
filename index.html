@@ -362,8 +362,12 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape")close()});
 function toast(t){var e=$("#toast");e.textContent=t;e.classList.add("show");setTimeout(function(){e.classList.remove("show")},2400)}
 $$("[data-plan]").forEach(function(x){x.onclick=function(){$("#pl").value=x.dataset.plan;toast("Plan "+x.dataset.plan+" seleccionado");$("#contacto").scrollIntoView({behavior:"smooth"})}});
 $("#f").onsubmit=function(e){e.preventDefault();var t="Hola, soy "+$("#nm").value+". Necesito: "+$("#nd").value+(($("#pl").value)?" (Plan "+$("#pl").value+")":"")+". "+$("#ms").value;window.open(wa(t),"_blank");toast("Abriendo WhatsApp…")};
-var ids=["inicio","servicios","precios","portafolio","contacto"],links=$$(".dock a");
+var ids=["inicio","servicios","precios","portafolio","contacto"],links=$(".dock a");
 window.addEventListener("scroll",function(){var y=scrollY+200,k=0;ids.forEach(function(id,i){if($("#"+id).offsetTop<=y)k=i});links.forEach(function(a,i){a.classList.toggle("on",i===k)})},{passive:true});
 </script>
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
