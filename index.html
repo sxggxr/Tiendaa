@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Al agregarla a la pantalla de inicio se abre como app, a pantalla completa y sin la barra de Safari -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="DiseñoWeb MX">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>DiseñoWebMX</title>
+<meta name="description" content="Galería interactiva de servicios de DiseñoWeb MX: páginas web, tiendas en línea, portafolios, invitaciones digitales y asesorías de programación.">
+<meta name="theme-color" content="#2bb3a6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<!--
+  CÓMO USARLO EN TU PÁGINA
+  1) Como página aparte: guarda este archivo como showroom.html en la carpeta de tu proyecto
+     de Vercel y enlázalo desde tu menú: <a href="/showroom.html">Servicios</a>
+  2) Dentro de tu index.html: copia el bloque <style> (todo cuelga de la clase .sr), la
+     <section class="sr" id="showroom"> y el <script>. Pon la sección dentro de un contenedor
+     con altura, por ejemplo <div style="height:100svh">...</div>
+  3) Cambia tu WhatsApp, textos y precios en CONFIG e ITEMS (al inicio del script).
+-->
+
+<style>
+/* Plan visual: pared oscura con vitrinas iluminadas (como el video). Una sola luz de marca
+   (verde azulado #2bb3a6) y un color de luz propio por vitrina. La cámara hace zoom a la pared. */
+:root{
+  --wall:#0b0f0e; --ink:#eef3f1; --muted:#8c9d98; --line:rgba(255,255,255,.12);
+  --teal:#2bb3a6; --teal-ink:#05211e;
+  --display:"Bricolage Grotesque","Arial Narrow",system-ui,sans-serif;
+  --serif:"Instrument Serif","Iowan Old Style",Georgia,serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.65,0,.2,1);
+}
+html,body{height:100%;margin:0;background:var(--wall);color-scheme:dark}
+
+/* ---------- escenario ---------- */
+.sr{position:relative;width:100%;height:100%;min-height:560px;overflow:hidden;overflow:clip;isolation:isolate;
+  background:radial-gradient(120% 90% at 50% -10%,#1b2724 0%,var(--wall) 62%);
+  color:var(--ink);font-family:var(--display);touch-action:pan-y;user-select:none;-webkit-user-select:none;
+  -webkit-font-smoothing:antialiased;--tone:var(--teal)}
+.sr *,.sr *::before,.sr *::after{box-sizing:border-box}
+.sr :where(h1,h2,h3,h4,p,dl,dd,ul,pre){margin:0}
+.sr :where(button){font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.sr :focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+.sr .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+.sr .floor{position:absolute;left:-10%;right:-10%;bottom:-8%;height:24%;z-index:0;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%,color-mix(in oklab,var(--tone) 55%,transparent),transparent 70%);
+  opacity:.45;transition:opacity .8s}
+.sr[data-open] .floor{opacity:.28}
+.sr .beam{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;opacity:0;transition:opacity .5s;
+  background:radial-gradient(420px 420px at var(--mx,50%) var(--my,30%),rgba(255,255,255,.075),transparent 70%)}
+.sr[data-live] .beam{opacity:1}
+.sr[data-open] .beam{opacity:0}
+
+/* ---------- pared y vitrinas ---------- */
+.sr .wall{position:absolute;inset:0;z-index:1;padding:96px 4vw 60px;display:grid;gap:2vh 2.2vw;
+  grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));
+  transform-origin:0 0;transition:transform 1.15s var(--ease)}
+.sr.jump .wall{transition:none}
+.sr .cell{position:relative;display:grid;grid-template-rows:minmax(0,1fr) auto auto;justify-items:center;
+  min-height:0;cursor:pointer;border-radius:12px;transition:opacity .7s var(--ease);-webkit-tap-highlight-color:transparent}
+.sr .spot{position:absolute;left:-6%;right:-6%;top:-8%;bottom:34px;pointer-events:none;opacity:.25;transition:opacity .6s;
+  background:radial-gradient(55% 75% at 50% 100%,color-mix(in oklab,var(--glow) 30%,transparent),transparent 72%)}
+.sr .ow{position:relative;container-type:size;width:100%;min-height:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px}
+.sr .obj{position:relative;width:min(90cqw,calc(84cqh*var(--ar)));aspect-ratio:var(--ar);border-radius:clamp(3px,3.2%,12px)}
+.sr .obj.ph{border-radius:12% / 6%}
+.sr .face{position:absolute;inset:0;container-type:inline-size;border-radius:inherit;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 0 0 1px rgba(255,255,255,.1),0 18px 34px -12px rgba(0,0,0,.75);transition:transform .6s var(--ease)}
+.sr .shelf{position:relative;width:96%;height:7px;border-radius:3px;background:linear-gradient(#ffffff59,#ffffff14);box-shadow:0 1px 0 #ffffff40 inset}
+.sr .shelf::after{content:"";position:absolute;left:4%;right:4%;top:100%;height:14px;border-radius:50%;background:var(--glow);
+  filter:blur(12px);opacity:.38;transition:opacity .5s,transform .5s;animation:led 1.6s var(--ease) backwards;animation-delay:calc(var(--n)*110ms)}
+@keyframes led{from{opacity:0}}
+.sr .tag{display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:13px;text-align:center;transition:opacity .5s}
+.sr .tag b{font-weight:600;font-size:clamp(11px,1.05vw,15px);letter-spacing:.01em}
+.sr .tag b i{font-style:normal;color:var(--glow);font-variant-numeric:tabular-nums;margin-right:.6em;font-size:.82em;letter-spacing:.06em}
+.sr .tag small{color:var(--muted);font-size:clamp(10px,.82vw,12px);font-variant-numeric:tabular-nums}
+
+.sr .cell:hover .face,.sr .cell:focus-visible .face{transform:translateY(-3%)}
+.sr .cell:hover .spot,.sr .cell.on .spot{opacity:1}
+.sr .cell:hover .shelf::after,.sr .cell.on .shelf::after{opacity:.95;transform:scaleX(1.06)}
+.sr .cell:focus-visible{outline-offset:-3px}
+@media (hover:hover){.sr:not([data-open]) .wall:has(.cell:hover) .cell:not(:hover){opacity:.5}}
+.sr[data-open] .cell:not(.on){opacity:.3}
+.sr[data-open] .cell:not(.on):hover{opacity:.55}
+.sr[data-open] .cell:not(.on) .spot{opacity:.15}
+.sr[data-open] .tag{opacity:0}
+
+/* ---------- cabecera ---------- */
+.sr .top{position:absolute;z-index:6;left:0;right:0;top:0;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:20px clamp(16px,4vw,48px);background:linear-gradient(#0b0f0ed9,transparent);pointer-events:none}
+.sr .top>*{pointer-events:auto}
+.sr .brand{display:flex;flex-direction:column;gap:3px}
+.sr .brand b{font-weight:800;font-stretch:80%;letter-spacing:.14em;font-size:13px;text-transform:uppercase;white-space:nowrap}
+.sr .brand span{font:italic 400 21px/1 var(--serif);color:#cfe7e3}
+.sr .acts{display:flex;gap:10px;align-items:center}
+.sr .pill{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:999px;border:1px solid var(--line);
+  background:#ffffff0d;backdrop-filter:blur(8px);font-size:13px;font-weight:600;white-space:nowrap;transition:background .25s,border-color .25s,opacity .4s,transform .4s}
+.sr .pill:hover{background:#ffffff1f;border-color:#ffffff40}
+.sr .pill b{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:10px;padding:0 5px;background:var(--teal);color:var(--teal-ink);font-size:11px;font-variant-numeric:tabular-nums}
+.sr .pill b.bump{animation:bump .45s var(--ease)}
+@keyframes bump{40%{transform:scale(1.4)}}
+.sr .back{opacity:0;pointer-events:none;transform:translateX(8px)}
+.sr[data-open] .back{opacity:1;pointer-events:auto;transform:none;transition-delay:0s,0s,.45s,.45s}
+
+.sr .foot{position:absolute;z-index:3;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:16px;
+  padding:0 clamp(16px,4vw,48px) 18px;font-size:12px;color:var(--muted);pointer-events:none;transition:opacity .5s}
+.sr[data-open] .foot{opacity:0}
+.sr .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:9px;background:var(--teal);animation:ping 2.2s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 #2bb3a680}70%,100%{box-shadow:0 0 0 9px #2bb3a600}}
+
+/* ---------- panel de detalle ---------- */
+.sr .panel{position:absolute;z-index:5;left:clamp(20px,5vw,80px);top:50%;width:min(38vw,460px);max-height:calc(100% - 110px);overflow:auto;
+  display:flex;flex-direction:column;gap:18px;opacity:0;pointer-events:none;transform:translate(-24px,-50%);
+  transition:opacity .45s,transform .8s var(--ease);scrollbar-width:none}
+.sr[data-open] .panel{opacity:1;pointer-events:auto;transform:translate(0,-50%);transition-delay:.5s}
+.sr .panel.in>*{animation:rise .7s var(--ease) backwards;animation-delay:calc(var(--k)*70ms + 60ms)}
+.sr .panel>:nth-child(1){--k:0}.sr .panel>:nth-child(2){--k:1}.sr .panel>:nth-child(3){--k:2}.sr .panel>:nth-child(4){--k:3}
+.sr .panel>:nth-child(5){--k:4}.sr .panel>:nth-child(6){--k:5}.sr .panel>:nth-child(7){--k:6}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.sr .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+.sr .eyebrow i{font-style:normal;color:var(--glow)}
+.sr .ttl{font-weight:800;font-stretch:78%;text-transform:uppercase;font-size:clamp(32px,4.4vw,68px);line-height:.9;letter-spacing:-.01em;text-wrap:balance}
+.sr .ttl em{display:block;font:italic 400 1.14em/.95 var(--serif);text-transform:none;letter-spacing:0;color:var(--glow);margin-top:.05em}
+.sr .desc{color:#b9c8c4;font-size:15px;line-height:1.5;max-width:42ch}
+.sr .specs{display:grid;border-top:1px solid var(--line)}
+.sr .specs div{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.sr .specs dt{color:var(--muted)}
+.sr .specs dd{text-align:right;font-variant-numeric:tabular-nums}
+.sr .price{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
+.sr .price small{color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.sr .price b{font-size:clamp(30px,3.2vw,44px);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.sr .price span{color:var(--muted);font-size:13px}
+.sr .ctas{display:flex;flex-wrap:wrap;gap:10px}
+.sr .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:46px;padding:0 20px;border-radius:999px;
+  font-weight:700;font-size:14px;text-decoration:none;color:inherit;transition:transform .2s,background .2s,border-color .2s}
+.sr .btn.go{background:var(--teal);color:var(--teal-ink)}
+.sr .btn.go:hover{background:#3fd0c1;transform:translateY(-1px)}
+.sr .btn .sm{display:none}
+.sr .btn.alt{border:1px solid #ffffff33}
+.sr .btn.alt:hover{background:#ffffff14}
+.sr .btn.alt[aria-pressed="true"]{border-color:var(--teal);background:#2bb3a61f}
+.sr .fine{font-size:11.5px;color:var(--muted);line-height:1.45}
+
+.sr .pager{position:absolute;z-index:5;left:66.5%;bottom:clamp(18px,5vh,44px);display:flex;align-items:center;gap:14px;
+  opacity:0;pointer-events:none;transform:translate(-50%,10px);transition:opacity .4s,transform .5s var(--ease)}
+.sr[data-open] .pager{opacity:1;pointer-events:auto;transform:translate(-50%,0);transition-delay:.7s}
+.sr .arrow{width:44px;height:44px;border-radius:50%;border:1px solid #ffffff33;display:grid;place-items:center;transition:background .2s}
+.sr .arrow:hover{background:#ffffff1f}
+.sr .count{min-width:64px;text-align:center;font-size:13px;letter-spacing:.14em;color:var(--muted);font-variant-numeric:tabular-nums}
+.sr .count b{color:var(--ink);font-weight:600}
+
+/* ---------- mi cotización ---------- */
+.sr .scrim{position:absolute;inset:0;z-index:7;background:#000000b3;opacity:0;pointer-events:none;transition:opacity .4s}
+.sr[data-bag] .scrim{opacity:1;pointer-events:auto}
+.sr .bag{position:absolute;z-index:8;top:0;right:0;bottom:0;width:min(92%,390px);padding:22px;display:flex;flex-direction:column;gap:16px;
+  background:#0f1514;border-left:1px solid var(--line);transform:translateX(102%);transition:transform .5s var(--ease)}
+.sr[data-bag] .bag{transform:none}
+.sr .bag header{display:flex;align-items:center;justify-content:space-between}
+.sr .bag h3{font-weight:800;font-stretch:80%;text-transform:uppercase;letter-spacing:.08em;font-size:15px}
+.sr .bag .x{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);font-size:18px;line-height:1}
+.sr .bag ul{list-style:none;padding:0;display:grid;gap:0;overflow:auto;flex:1;align-content:start}
+.sr .bag li{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+.sr .bag li div{flex:1;display:grid;gap:2px}
+.sr .bag li b{font-size:14px;font-weight:600}
+.sr .bag li small{color:var(--muted);font-size:12px}
+.sr .bag li button{width:30px;height:30px;border-radius:50%;color:var(--muted);font-size:18px}
+.sr .bag li button:hover{background:#ffffff1a;color:var(--ink)}
+.sr .bag .empty{color:var(--muted);font-size:14px;line-height:1.5;padding:8px 0}
+.sr .bag .btn[aria-disabled="true"]{opacity:.35;pointer-events:none}
+.sr .bag .clear{font-size:12.5px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;align-self:center}
+
+/* ---------- maquetas de cada vitrina (todo en cqw: escala con la cámara) ---------- */
+.sr .face{font-size:2.6cqw;line-height:1.25;text-align:left}
+.sr .chrome{flex:none;height:7cqw;display:flex;align-items:center;gap:1.4cqw;padding:0 2.4cqw;background:var(--chrome,#0000001a)}
+.sr .chrome i{width:1.7cqw;height:1.7cqw;border-radius:50%;background:currentColor;opacity:.3}
+.sr .chrome span{margin-left:2cqw;flex:1;max-width:46cqw;height:3.6cqw;border-radius:2cqw;background:#00000014;display:flex;align-items:center;padding:0 2cqw;font-size:2.1cqw;opacity:.75}
+.sr .pg{flex:1;min-height:0;padding:3cqw 4cqw;display:grid;gap:3cqw;align-content:start}
+.sr .pg nav{display:flex;align-items:center;gap:3.4cqw;font-size:2.3cqw;font-weight:500}
+.sr .pg nav b{margin-right:auto}
+.sr .pg nav .cta{padding:1cqw 2.4cqw;border-radius:3cqw}
+
+.sr .cafe{background:#f5ead8;color:#3a2416;--chrome:#e7d5b8}
+.sr .cafe nav b{font:400 3.6cqw/1 var(--serif)}
+.sr .cafe .cta{background:#c4602b;color:#fff5e8}
+.sr .cafe .hero{display:grid;grid-template-columns:1fr 26cqw;gap:3cqw;align-items:center}
+.sr .cafe h4{font:400 8.6cqw/.95 var(--serif)}
+.sr .cafe h4 em{color:#c4602b}
+.sr .cafe .hero p{margin-top:1.8cqw;font-size:2.3cqw;opacity:.75;max-width:32cqw}
+.sr .cafe .cup{aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#f5ead8 0 14%,#4a2b1a 15% 34%,#c4602b 35% 56%,#e9b97a 57% 100%);box-shadow:0 2cqw 4cqw #5a321a44}
+.sr .cafe .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:2.2cqw}
+.sr .cafe .cards span{height:9.5cqw;border-radius:1.8cqw;background:#ecd9bb;padding:1.8cqw;display:flex;flex-direction:column;justify-content:flex-end;gap:.8cqw;font-size:2cqw;font-weight:600}
+.sr .cafe .cards span::before{content:"";width:4cqw;height:.9cqw;border-radius:1cqw;background:#c4602b}
+
+.sr .shop{background:#fff0f3;color:#3b1d29;--chrome:#f7d6df}
+.sr .shop nav b{font:italic 400 3.9cqw/1 var(--serif)}
+.sr .shop .cta{background:#3b1d29;color:#ffe9ef}
+.sr .shop .ban{border-radius:2cqw;background:linear-gradient(100deg,#e0527f,#f59ab3);color:#fff;padding:2.6cqw 3.4cqw;display:flex;justify-content:space-between;align-items:center;font:400 4.8cqw/1 var(--serif)}
+.sr .shop .ban small{font:600 2cqw var(--display);letter-spacing:.08em;text-transform:uppercase;background:#fff;color:#c13b67;padding:1cqw 2cqw;border-radius:2cqw}
+.sr .shop .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2.2cqw}
+.sr .shop .grid span{display:grid;gap:.8cqw;font-size:1.9cqw;font-weight:600}
+.sr .shop .grid span::before{content:"";height:15cqw;border-radius:1.8cqw;background:var(--c)}
+.sr .shop .grid em{font-style:normal;font-weight:400;opacity:.7}
+
+.sr .port{background:#0e1514;color:#e8f2ef;--chrome:#18211f}
+.sr .port .pg{grid-template-columns:.9fr 1.3fr;gap:4cqw;align-content:stretch}
+.sr .port .who{display:flex;flex-direction:column;justify-content:space-between}
+.sr .port .who small{font-size:1.9cqw;letter-spacing:.18em;text-transform:uppercase;color:#35d0c0}
+.sr .port h4{margin-top:2cqw;font:400 9.6cqw/.92 var(--serif)}
+.sr .port h4 em{color:#35d0c0}
+.sr .port .who p{font-size:2.1cqw;opacity:.65;max-width:26cqw}
+.sr .port .mos{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:1.6cqw}
+.sr .port .mos span{border-radius:1.4cqw;background:var(--c)}
+.sr .port .mos span:first-child{grid-row:span 2}
+
+.sr .inv{background:#0d0f0e}
+.sr .inv .scr{position:absolute;inset:2.4cqw;border-radius:10cqw;overflow:hidden;background:#fbf5e9;color:#3a3326;display:flex;flex-direction:column;align-items:center;
+  justify-content:space-between;text-align:center;padding:14cqw 7cqw 8cqw}
+.sr .inv .notch{position:absolute;top:2.6cqw;left:50%;width:22cqw;height:5.4cqw;margin-left:-11cqw;border-radius:3cqw;background:#0d0f0e}
+.sr .inv small{font-size:3cqw;letter-spacing:.3em;text-transform:uppercase;color:#b08a3a}
+.sr .inv .mono{width:27cqw;height:27cqw;border-radius:50%;border:.6cqw solid #c9a45a;display:grid;place-items:center;font:400 11cqw/1 var(--serif);color:#b08a3a}
+.sr .inv h4{font:400 13cqw/.95 var(--serif)}
+.sr .inv h4 em{color:#b08a3a}
+.sr .inv .dt{font-size:3.6cqw;letter-spacing:.14em;text-transform:uppercase}
+.sr .inv .cd{display:grid;grid-template-columns:repeat(4,1fr);gap:2cqw;width:100%}
+.sr .inv .cd span{display:grid;gap:.4cqw;padding:2cqw 0;border-radius:2cqw;background:#efe4cb;font-size:2.2cqw;text-transform:uppercase;letter-spacing:.08em}
+.sr .inv .cd b{font:400 7cqw/1 var(--serif);letter-spacing:0}
+.sr .inv .rsvp{padding:3.2cqw 6cqw;border-radius:6cqw;background:#b08a3a;color:#fffaf0;font-size:3.2cqw;font-weight:600}
+.sr .inv .pl{font-size:2.8cqw;opacity:.7}
+
+.sr .java{--acc:#ff7a4d;--k:#ff9d6e}
+.sr .cpp{--acc:#6f9bff;--k:#93b3ff}
+.sr .java,.sr .cpp{background:#12171b;color:#d7e0e6;--chrome:#0b0f12;--s:#9fd88a;--n:#7cc4ff;--t:#f4d06f}
+.sr .java .chrome,.sr .cpp .chrome{color:#fff}
+.sr .java .chrome span,.sr .cpp .chrome span{background:#ffffff12;font:500 2.1cqw var(--mono)}
+.sr .java pre,.sr .cpp pre{flex:1;padding:3cqw 3cqw 0;font:500 2.5cqw/1.5 var(--mono);white-space:pre;overflow:hidden;counter-reset:l}
+.sr .java pre span,.sr .cpp pre span{display:block;min-height:1.5em}
+.sr .java pre span::before,.sr .cpp pre span::before{counter-increment:l;content:counter(l);display:inline-block;width:3cqw;margin-right:2.4cqw;text-align:right;opacity:.3}
+.sr .java k,.sr .cpp k{color:var(--k);font-style:normal}
+.sr .java s,.sr .cpp s{color:var(--s);text-decoration:none}
+.sr .java n,.sr .cpp n{color:var(--n)}
+.sr .java t,.sr .cpp t{color:var(--t)}
+.sr .out{flex:none;margin:2cqw 3cqw 3cqw;padding:2cqw 2.6cqw;border-radius:1.6cqw;background:#0a0d10;font:500 2.3cqw/1.5 var(--mono);color:#9fb3bd;border:.3cqw solid #ffffff14}
+.sr .out b{color:var(--acc);font-weight:600}
+
+.sr .doc{background-color:#fbf9f1;color:#2a2a24;background-image:repeating-linear-gradient(transparent 0 6.2cqw,#9ec2d640 6.2cqw 6.5cqw)}
+.sr .doc .note{position:absolute;right:5cqw;top:6cqw;width:24cqw;padding:3cqw;background:#ffe27a;transform:rotate(4deg);font:italic 400 4cqw/1.1 var(--serif);box-shadow:0 1.4cqw 2.4cqw #0003}
+.sr .doc .pgd{flex:1;margin-left:9cqw;padding:7cqw 6cqw 6cqw 6cqw;border-left:.5cqw solid #e5736a80;display:flex;flex-direction:column;gap:4.4cqw}
+.sr .doc small{font-size:2.6cqw;letter-spacing:.14em;text-transform:uppercase;color:#8a8a7c;padding-right:26cqw}
+.sr .doc h4{font:400 14cqw/.92 var(--serif)}
+.sr .doc h4 em{color:#c9950a}
+.sr .doc ul{list-style:none;padding:0;display:grid;gap:4.2cqw;font-size:4.8cqw;font-weight:500}
+.sr .doc li{display:flex;gap:2.6cqw;align-items:center}
+.sr .doc li::before{content:"";flex:none;width:4.8cqw;height:4.8cqw;border-radius:1cqw;border:.5cqw solid #2a2a24;display:grid;place-items:center;font-size:3.4cqw;line-height:1}
+.sr .doc li.ok::before{content:"✓";background:#ffd24d;border-color:#ffd24d}
+.sr .doc .prog{margin-top:auto;height:2.4cqw;border-radius:2cqw;background:#2a2a2418;overflow:hidden}
+.sr .doc .prog i{display:block;height:100%;width:67%;background:#ffc21f}
+
+.sr .term{background:#0c1410;color:#cfe8d4;--chrome:#07100b}
+.sr .term .chrome{color:#fff}
+.sr .term .pg{grid-template-columns:1.15fr 1fr;gap:3cqw;padding:3.4cqw;align-content:start}
+.sr .term pre{font:500 2.4cqw/1.6 var(--mono);white-space:pre;overflow:hidden}
+.sr .term p,.sr .term .p{color:#7ddc6b}
+.sr .term .g{color:#6f8a77}
+.sr .term .tbl{border:.35cqw solid #ffffff1f;border-radius:1.6cqw;overflow:hidden;font:500 2.1cqw var(--mono)}
+.sr .term .tbl div{display:grid;grid-template-columns:.5fr 1.4fr 1fr;padding:1.6cqw 2cqw;border-top:.3cqw solid #ffffff14}
+.sr .term .tbl div:first-child{border-top:0;background:#ffffff12;color:#7ddc6b}
+
+/* ---------- celular vertical ---------- */
+@media (max-width:900px) and (orientation:portrait){
+  .sr .wall{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));padding:84px 14px 52px;gap:6px 12px}
+  .sr .brand span{display:none}
+  .sr .brand b{font-size:12px}
+  .sr .pill{height:36px;padding:0 13px}
+  .sr .back{padding:0;width:36px;justify-content:center}
+  .sr .back span{display:none}
+  .sr .tag{padding-top:10px}
+  .sr .tag b{font-size:11.5px}
+  .sr .tag small{display:none}
+  .sr .foot .note{display:none}
+  .sr .panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:62%;padding:44px 20px 0;gap:12px;transform:translateY(24px);
+    background:linear-gradient(transparent,#0b0f0ef2 26px)}
+  .sr[data-open] .panel{transform:none}
+  .sr .ttl{font-size:clamp(30px,10vw,44px)}
+  .sr .desc{font-size:14px}
+  .sr .specs div{padding:7px 0;font-size:13px}
+  .sr .pager{left:50%;bottom:14px}
+  .sr .panel::after{content:"";flex:none;height:64px}
+  .sr .panel .fine{display:none}
+  .sr .ctas{flex-wrap:nowrap}
+  .sr .ctas .btn{flex:1;height:44px;padding:0 12px;font-size:13px}
+  .sr .btn.go svg{display:none}
+  .sr .btn .lg{display:none}
+  .sr .btn .sm{display:inline}
+}
+@media (max-height:520px){.sr .desc,.sr .fine{display:none}}
+@media (prefers-reduced-motion:reduce){
+  .sr *,.sr *::before,.sr *::after{animation:none!important;transition-duration:.01ms!important;transition-delay:0s!important}
+}
+</style>
+<!-- EXTRAS (solo agregado): diseño propio por vitrina + secciones nuevas -->
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<style id="extras">
+/* Cada vitrina trae su propia "piel" en el panel de detalle (data-skin = id de la vitrina). */
+.sr .panel[data-skin]{--pb:#0e1514;--pi:#e8f2ef;--pm:#8aa39e;--pl:#ffffff22;--pa:#35d0c0;--pk:#05211e;--glow:var(--pa);
+  --ph:var(--display);--pf:var(--display);--pe:var(--serif);--es:italic;--tt:uppercase;
+  color:var(--pi);scrollbar-width:thin;scrollbar-color:var(--pa) transparent}
+.sr .panel[data-skin=negocio]{--pb:#f5ead8;--pi:#3a2416;--pm:#8a6a52;--pl:#3a241633;--pa:#c4602b;--pk:#fff5e8;--ph:var(--serif);--tt:none}
+.sr .panel[data-skin=tienda]{--pb:#fff0f3;--pi:#3b1d29;--pm:#9a6b7c;--pl:#3b1d2930;--pa:#d63f73;--pk:#fff;--ph:var(--serif);--tt:none}
+.sr .panel[data-skin=invitacion]{--pb:#fbf5e9;--pi:#3a3326;--pm:#8d7a55;--pl:#b08a3a55;--pa:#a07a2c;--pk:#fffaf0;--ph:"Cormorant Garamond",var(--serif);--pe:"Cormorant Garamond",var(--serif);--tt:none}
+.sr .panel[data-skin=java]{--pb:#12171b;--pi:#d7e0e6;--pm:#7d8c96;--pl:#ffffff1c;--pa:#ff7a4d;--pk:#1a0c06;--ph:var(--mono);--pf:var(--mono);--pe:var(--mono);--es:normal;--tt:none}
+.sr .panel[data-skin=cpp]{--pb:#0b1224;--pi:#d6e2ff;--pm:#7f93bd;--pl:#6f9bff40;--pa:#7ea6ff;--pk:#06122b;--ph:var(--mono);--pf:var(--mono);--pe:var(--mono);--es:normal;--tt:none}
+.sr .panel[data-skin=escolares]{--pb:#fbf9f1;--pi:#2a2a24;--pm:#6f6f60;--pl:#9ec2d6;--pa:#b8860b;--pk:#2a2a24;--ph:"Caveat",cursive;--pe:"Caveat",cursive;--es:normal;--tt:none}
+.sr .panel[data-skin=proyectos]{--pb:#0c1410;--pi:#cfe8d4;--pm:#6f8a77;--pl:#7ddc6b33;--pa:#7ddc6b;--pk:#06140a;--ph:var(--mono);--pf:var(--mono);--pe:var(--mono);--es:normal;--tt:none}
+
+.sr .panel[data-skin] .eyebrow{color:var(--pm)}
+.sr .panel[data-skin] .ttl{font-family:var(--ph);text-transform:var(--tt);color:var(--pi)}
+.sr .panel[data-skin] .ttl em{font-family:var(--pe);font-style:var(--es);color:var(--pa)}
+.sr .panel[data-skin] .desc{color:var(--pi);opacity:.82;font-family:var(--pf)}
+.sr .panel[data-skin] .specs,.sr .panel[data-skin] .specs div{border-color:var(--pl)}
+.sr .panel[data-skin] .specs dt,.sr .panel[data-skin] .price small,.sr .panel[data-skin] .price span,.sr .panel[data-skin] .fine{color:var(--pm)}
+.sr .panel[data-skin] .specs{font-family:var(--pf)}
+.sr .panel[data-skin] .price b{color:var(--pi)}
+.sr .panel[data-skin] .btn.go,.sr .panel[data-skin] .btn.go:hover{background:var(--pa);color:var(--pk)}
+.sr .panel[data-skin] .btn.go:hover{filter:brightness(1.1)}
+.sr .panel[data-skin] .btn.alt{border-color:var(--pl);color:var(--pi)}
+.sr .panel[data-skin] .btn.alt:hover,.sr .panel[data-skin] .btn.alt[aria-pressed="true"]{border-color:var(--pa);background:color-mix(in oklab,var(--pa) 16%,transparent)}
+.sr .panel[data-skin] :focus-visible{outline-color:var(--pa)}
+.sr .panel:is([data-skin=negocio],[data-skin=tienda],[data-skin=invitacion],[data-skin=escolares]) .ttl{font-weight:400;font-stretch:100%;line-height:.95}
+.sr .panel:is([data-skin=java],[data-skin=cpp],[data-skin=proyectos]) .ttl{font-weight:700;font-stretch:100%;line-height:1.08}
+.sr .panel:is([data-skin=java],[data-skin=cpp],[data-skin=proyectos]) .ttl em{font-weight:500}
+
+/* ---- rasgos propios de cada piel ---- */
+.sr .panel[data-skin=negocio] .specs div{border-bottom:2px dotted var(--pl)}
+.sr .panel[data-skin=negocio] .btn{border-radius:10px}
+.sr .panel[data-skin=tienda] .ttl{font-style:italic}
+.sr .panel[data-skin=tienda] .price{align-self:flex-start;padding:8px 18px;border-radius:999px;background:#fff;box-shadow:0 8px 20px -8px #d63f7366}
+.sr .panel[data-skin=portafolio] .specs dt{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase}
+.sr .panel[data-skin=portafolio] .ttl{border-left:3px solid var(--pa);padding-left:14px}
+.sr .panel[data-skin=invitacion]{text-align:center}
+.sr .panel[data-skin=invitacion] :is(.desc,.specs){margin-inline:auto}
+.sr .panel[data-skin=invitacion] :is(.price,.ctas){justify-content:center}
+.sr .panel[data-skin=invitacion] .desc{font-size:17px;font-style:italic}
+.sr .panel[data-skin=invitacion] .btn{border-radius:2px}
+.sr .panel[data-skin=java] .specs dt::after,.sr .panel[data-skin=cpp] .specs dt::after{content:" =";opacity:.6}
+.sr .panel[data-skin=java] .desc::before,.sr .panel[data-skin=cpp] .desc::before{content:"// ";color:var(--pa)}
+.sr .panel[data-skin=proyectos] .desc::before{content:"$ ";color:var(--pa)}
+.sr .panel[data-skin=proyectos] .eyebrow::before{content:"~/vitrina ";color:var(--pa)}
+.sr .panel[data-skin=escolares] .ttl em{background:linear-gradient(transparent 52%,#ffd24d99 52%);padding:0 .12em}
+.sr .panel[data-skin=escolares] .desc{font-family:"Caveat",cursive;font-size:20px;line-height:1.2}
+.sr .panel[data-skin=escolares] .price{align-self:flex-start;padding:10px 18px;background:#ffe27a;transform:rotate(-2deg);box-shadow:0 10px 16px -8px #0004}
+
+/* ---- tarjeta del panel (escritorio) ---- */
+@media not all and (max-width:900px) and (orientation:portrait){
+  .sr .panel[data-skin]{padding:30px;border-radius:22px;border:1px solid var(--pl);background:var(--pb);box-shadow:0 34px 70px -26px #000e}
+  .sr .panel[data-skin]{top:calc(50% + 34px);max-height:calc(100% - 184px)}
+  .sr .panel[data-skin=tienda]{border-radius:34px}
+  .sr .panel[data-skin=invitacion]{border-radius:4px;box-shadow:inset 0 0 0 7px var(--pb),inset 0 0 0 8px var(--pl),0 34px 70px -26px #000e}
+  .sr .panel[data-skin=portafolio]{border-radius:6px}
+  .sr .panel:is([data-skin=java],[data-skin=cpp],[data-skin=proyectos]){padding-top:46px;border-radius:12px;
+    background:radial-gradient(circle at 22px 22px,#ff5f57 5px,#0000 6px),radial-gradient(circle at 42px 22px,#febc2e 5px,#0000 6px),radial-gradient(circle at 62px 22px,#28c840 5px,#0000 6px),var(--pb)}
+  .sr .panel[data-skin=cpp]{background:radial-gradient(circle at 22px 22px,#ff5f57 5px,#0000 6px),radial-gradient(circle at 42px 22px,#febc2e 5px,#0000 6px),radial-gradient(circle at 62px 22px,#28c840 5px,#0000 6px),linear-gradient(#6f9bff14 1px,#0000 1px) 0 0/26px 26px,linear-gradient(90deg,#6f9bff14 1px,#0000 1px) 0 0/26px 26px,var(--pb);border-style:dashed}
+  .sr .panel[data-skin=escolares]{padding-left:54px;border-radius:6px;border-left:2px solid #e5736acc;background:repeating-linear-gradient(#0000 0 31px,#9ec2d655 31px 32px),var(--pb)}
+  .sr .panel[data-skin=escolares] .ttl{font-size:clamp(44px,5.6vw,84px)}
+  .sr .panel:is([data-skin=java],[data-skin=cpp],[data-skin=proyectos]) .ttl{font-size:clamp(24px,3vw,44px)}
+}
+@media (max-width:900px) and (orientation:portrait){
+  .sr .panel[data-skin]{background:linear-gradient(transparent,var(--pb) 26px)}
+  .sr .panel[data-skin=escolares] .ttl{font-size:clamp(38px,12vw,54px)}
+  .sr .panel:is([data-skin=java],[data-skin=cpp],[data-skin=proyectos]) .ttl{font-size:clamp(24px,7.5vw,34px)}
+}
+
+/* ---- secciones nuevas ---- */
+.sr .x-sec{display:grid;gap:12px;padding-top:10px;font-family:var(--pf)}
+.sr .x-sec h3{display:flex;align-items:center;gap:12px;font:700 17px/1.1 var(--ph);color:var(--pi)}
+.sr .panel[data-skin=escolares] .x-sec h3{font-size:28px}
+.sr .x-sec h3::after{content:"";flex:1;height:1px;background:var(--pl)}
+.sr .x-chips,.sr .x-list,.sr .x-steps{list-style:none;padding:0}
+.sr .x-chips{display:flex;flex-wrap:wrap;gap:8px}
+.sr .x-chips li{padding:6px 13px;border-radius:999px;border:1px solid var(--pl);font-size:13px;color:var(--pi)}
+.sr .x-list{display:grid;gap:9px;font-size:14px;line-height:1.35}
+.sr .x-list li{display:flex;gap:10px;text-align:left}
+.sr .x-list li::before{content:"✓";color:var(--pa);font-weight:800}
+.sr .x-steps{display:grid;gap:13px;counter-reset:s}
+.sr .x-steps li{display:grid;grid-template-columns:30px 1fr;gap:12px;font-size:14px;line-height:1.4;text-align:left;counter-increment:s}
+.sr .x-steps li::before{content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--pa);color:var(--pk);font-weight:700;font-size:13px}
+.sr .x-steps b{display:block;font-weight:600}
+.sr .x-steps span{color:var(--pm)}
+.sr .x-faq details{border-bottom:1px solid var(--pl);padding:11px 0;font-size:14px;text-align:left}
+.sr .x-faq summary{display:flex;justify-content:space-between;gap:14px;font-weight:600;cursor:pointer;list-style:none}
+.sr .x-faq summary::-webkit-details-marker{display:none}
+.sr .x-faq summary::after{content:"+";color:var(--pa);font-weight:700}
+.sr .x-faq details[open] summary::after{content:"–"}
+.sr .x-faq p{margin-top:8px;color:var(--pm);line-height:1.45}
+.sr .x-sec .btn{justify-self:start}
+.sr .panel[data-skin=invitacion] .x-sec{justify-items:center}
+.sr .panel[data-skin=invitacion] .x-chips{justify-content:center}
+.sr .panel[data-skin=invitacion] .x-sec .btn{justify-self:center}
+.sr .panel:is([data-skin=java],[data-skin=cpp],[data-skin=proyectos]) .x-chips li{border-radius:4px;font-size:12px}
+.sr .panel:is([data-skin=java],[data-skin=cpp],[data-skin=proyectos]) .x-steps li::before{border-radius:4px}
+.sr .panel[data-skin=escolares] .x-list li::before{content:"✔";color:#c9950a}
+.sr .panel[data-skin=tienda] .x-chips li{background:#fff;border-color:transparent}
+.sr .panel[data-skin=negocio] .x-faq details{border-bottom-style:dotted;border-bottom-width:2px}
+.sr .x-hint{position:sticky;bottom:0;align-self:flex-end;padding:8px 16px;border-radius:999px;background:var(--pa);color:var(--pk);font:700 12.5px var(--display);box-shadow:0 10px 24px -8px #0008}
+.sr .x-hint[hidden]{display:none}
+</style>
+<!-- LOGO (solo agregado) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%22116%2098%20280%20316%22%3E%3Cpolygon%20points%3D%22256%2C117%20376%2C186.5%20256%2C256%20136%2C186.5%22%20fill%3D%22%237bd359%22/%3E%3Cpolygon%20points%3D%22136%2C186.5%20256%2C256%20256%2C395%20136%2C325.5%22%20fill%3D%22%231d8ed0%22/%3E%3Cpolygon%20points%3D%22376%2C186.5%20256%2C256%20256%2C395%20376%2C325.5%22%20fill%3D%22%230b7c76%22/%3E%3Cpolygon%20points%3D%22256%2C196.7%20316%2C231.3%20316%2C300.7%20256%2C335.3%20196%2C300.7%20196%2C231.3%22%20fill%3D%22%23f4faf8%22/%3E%3Cpolygon%20points%3D%22256%2C226%20285.9%2C243.2%20285.9%2C277.8%20256%2C295%20226.1%2C277.8%20226.1%2C243.2%22%20fill%3D%22%23f5a23c%22/%3E%3C/svg%3E"><link rel="apple-touch-icon" href="logoo.jpg">
+<style id="logo">
+/* LOGO ANIMADO (solo agregado): el cubo sin fondo, vectorial */
+.sr .st-id{display:flex;align-items:center;gap:12px;min-width:0}
+.lg-wrap{display:block;flex:none;width:40px;height:45px;transform:perspective(220px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .35s ease-out;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lg{display:block;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 6px 10px #2bb3a64d)}
+.lg *{transform-box:fill-box;transform-origin:center}
+.lg .f{animation:lgIn .95s cubic-bezier(.2,.9,.25,1.25) both;animation-delay:var(--d,0s)}
+.lg .t{--dx:0px;--dy:-30px;--d:0s}.lg .l{--dx:-26px;--dy:20px;--d:.12s}.lg .r{--dx:26px;--dy:20px;--d:.24s}
+.lg .lg-sock{animation:lgPop .7s cubic-bezier(.2,1.4,.3,1) .6s both}
+.lg .lg-core{animation:lgPop .6s cubic-bezier(.2,1.6,.3,1) .85s both,lgPulse 2.6s ease-in-out 1.7s infinite}
+.lg .lg-all{animation:lgFloat 5s ease-in-out 1.2s infinite}
+.lg .b{animation:lgBreath 6s ease-in-out 1.8s infinite}
+.lg .bt{--bx:0px;--by:-3.5px}.lg .bl{--bx:-3px;--by:2px}.lg .br{--bx:3px;--by:2px}
+.lg .s{fill:#fff;opacity:0;animation:lgShine 6s ease-in-out infinite;animation-delay:calc(1.8s + var(--sd,0s))}
+.lg .lg-spin{transition:transform .9s cubic-bezier(.3,.8,.3,1)}
+.lg-wrap:hover .lg-spin{transform:rotate(180deg)}
+.lg.flip{animation:lgFlip .9s cubic-bezier(.3,.8,.3,1)}
+@keyframes lgIn{from{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.86)}to{opacity:1;transform:none}}
+@keyframes lgPop{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+@keyframes lgPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+@keyframes lgFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(1.2deg)}}
+@keyframes lgBreath{0%,55%,100%{transform:none}70%{transform:translate(var(--bx),var(--by))}}
+@keyframes lgShine{0%,60%,100%{opacity:0}70%{opacity:.5}80%{opacity:0}}
+@keyframes lgFlip{to{transform:perspective(300px) rotateY(360deg)}}
+@media (prefers-reduced-motion:reduce){.lg *,.lg{animation:none!important;transition:none!important}.lg-wrap{transform:none!important}}
+</style>
+<style id="movil">
+/* AJUSTES SOLO PARA CELULAR VERTICAL (la versión de PC no cambia).
+   - El panel ahora es una tarjeta que termina ENCIMA de las flechas (ya no se encima con ellas)
+   - La maqueta queda arriba, más chica, sin que el panel la tape
+   - Textos y secciones más compactos */
+@media (max-width:900px) and (orientation:portrait){
+  .sr{height:100vh;height:100dvh}
+  .sr .wall{padding:80px 14px calc(58px + env(safe-area-inset-bottom))}
+
+  /* tarjeta del detalle: sube desde abajo pero deja espacio a las flechas */
+  .sr .panel,.sr .panel[data-skin]{
+    left:12px;right:12px;width:auto;top:auto;
+    bottom:calc(66px + env(safe-area-inset-bottom));
+    max-height:calc(60% - 66px - env(safe-area-inset-bottom));
+    padding:20px 18px 14px;gap:12px;border-radius:20px;
+    border:1px solid var(--pl);background:var(--pb);
+    box-shadow:0 -10px 40px -12px #000c;
+    transform:translateY(24px);
+  }
+  .sr[data-open] .panel,.sr[data-open] .panel[data-skin]{transform:none}
+  .sr .panel::after{display:none}
+  .sr .panel[data-skin=invitacion]{border-radius:6px}
+  .sr .panel[data-skin=tienda]{border-radius:26px}
+
+  /* flechas en una barra propia, abajo */
+  .sr .pager{left:0;right:0;bottom:0;justify-content:center;gap:18px;
+    padding:8px 0 calc(10px + env(safe-area-inset-bottom));transform:translateY(10px)}
+  .sr[data-open] .pager{transform:none}
+  .sr .arrow{width:42px;height:42px;background:#0b0f0ecc;backdrop-filter:blur(6px)}
+
+  /* tipografía y espacios más sueltos */
+  .sr .eyebrow{font-size:11px}
+  .sr .ttl,.sr .panel[data-skin] .ttl{font-size:clamp(26px,8.2vw,36px)}
+  .sr .panel[data-skin=escolares] .ttl{font-size:clamp(34px,10.5vw,46px)}
+  .sr .panel:is([data-skin=java],[data-skin=cpp],[data-skin=proyectos]) .ttl{font-size:clamp(22px,6.6vw,30px)}
+  .sr .desc,.sr .panel[data-skin=escolares] .desc{font-size:13.5px;line-height:1.45}
+  .sr .panel[data-skin=escolares] .desc{font-size:18px}
+  .sr .specs div{padding:8px 0;font-size:12.5px}
+  .sr .price b{font-size:28px}
+  .sr .ctas{gap:8px}
+  .sr .ctas .btn{height:42px;font-size:13px}
+
+  /* secciones extra más compactas */
+  .sr .x-sec{gap:10px;padding-top:14px}
+  .sr .x-sec h3,.sr .x-sec h3{font-size:15px}
+  .sr .panel[data-skin=escolares] .x-sec h3{font-size:24px}
+  .sr .x-chips li{padding:5px 11px;font-size:12px}
+  .sr .x-list{font-size:13px;gap:8px}
+  .sr .x-steps{gap:11px}
+  .sr .x-steps li{font-size:13px;grid-template-columns:26px 1fr;gap:10px}
+  .sr .x-steps li::before{width:26px;height:26px;font-size:12px}
+  .sr .x-faq details{font-size:13px}
+
+  /* botón "Más abajo": chico y pegado al borde de la tarjeta */
+  .sr .x-hint{bottom:2px;padding:6px 12px;font-size:11.5px}
+}
+</style>
+</head>
+<body>
+
+<section class="sr" id="showroom" aria-label="Galería de servicios">
+  <h1 class="vh">DiseñoWeb MX. Te creo tu página web.</h1>
+  <div class="floor"></div>
+  <div class="wall" id="wall"></div>
+  <div class="beam"></div>
+
+  <header class="top">
+    <div class="brand"><b id="brandName">DiseñoWeb MX</b><span id="brandTag">Te creo tu página web</span></div>
+    <div class="acts">
+      <button class="pill back" id="back" type="button" aria-label="Volver a la galería">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        <span>Galería</span>
+      </button>
+      <button class="pill" id="bagBtn" type="button" aria-haspopup="dialog" aria-label="Abrir mi cotización">Cotización <b id="bagN">0</b></button>
+    </div>
+  </header>
+
+  <aside class="panel" id="panel" aria-live="polite"></aside>
+
+  <nav class="pager" aria-label="Cambiar de vitrina">
+    <button class="arrow" type="button" data-go="-1" aria-label="Vitrina anterior">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <span class="count" id="count"></span>
+    <button class="arrow" type="button" data-go="1" aria-label="Vitrina siguiente">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+  </nav>
+
+  <div class="foot"><span><i class="dot"></i>Elige una vitrina para verla de cerca</span><span class="note" id="note"></span></div>
+
+  <div class="scrim" id="scrim"></div>
+  <aside class="bag" id="bag" role="dialog" aria-label="Mi cotización" inert>
+    <header><h3>Mi cotización</h3><button class="x" id="bagClose" type="button" aria-label="Cerrar">×</button></header>
+    <ul id="bagList"></ul>
+    <a class="btn go" id="bagSend" href="#" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+    <button class="idea-link" type="button" data-idea="">¿Tu proyecto es diferente? Cuéntame tu idea</button>
+    <p class="fine" id="bagNote"></p>
+    <button class="clear" id="bagClear" type="button">Vaciar lista</button>
+  </aside>
+</section>
+
+<script>
+/* =====================================================================
+   CONFIGURACIÓN: aquí cambias tu WhatsApp, textos y servicios.
+   Los precios y planes salen de tu página disenowebmx.vercel.app
+   ===================================================================== */
+const CONFIG = {
+  brand: "DiseñoWeb MX",
+  tagline: "Te creo tu página web",
+  whatsapp: "525658575619",   // 52 + tu número a 10 dígitos, sin espacios ni +
+  note: "Precios en MXN. Se agrega IVA (16%) si necesitas factura. El trabajo urgente tiene un recargo de 30%.",
+  storageKey: "dwmx-cotizacion"
+};
+
+/* art = tipo de maqueta que se dibuja · ar = proporción ancho/alto · glow = color de la luz */
+const ITEMS = [
+  { id:"negocio", art:"cafe", ar:1.6, glow:"#ff9a4d", title:["Página para","negocio"],
+    desc:"Una página clara para que tus clientes te encuentren, vean lo que ofreces y te escriban por WhatsApp.",
+    specs:[["Secciones","Hasta 5"],["Incluye","Tienda o formulario"],["Extras","SEO básico y WhatsApp"],["Dominio y hosting","Aparte, $500"]],
+    priceLabel:"Plan Negocio", price:"$6,900", tag:"Plan Negocio · $6,900" },
+  { id:"tienda", art:"shop", ar:1.6, glow:"#ff7aa8", title:["Tienda","en línea"],
+    desc:"Una tienda completa para vender tus productos por internet, con un diseño hecho a tu medida.",
+    specs:[["Plan","Premium"],["Tienda","Completa"],["Diseño","Personalizado"],["Soporte","1 mes"],["Dominio y hosting","Aparte, $500"]],
+    priceLabel:"Plan Premium", price:"$12,000", tag:"Plan Premium · $12,000" },
+  { id:"portafolio", art:"port", ar:1.6, glow:"#35d0c0", title:["Tu","portafolio"],
+    desc:"Muestra tu trabajo con una página limpia y rápida que se ve bien en cualquier pantalla.",
+    specs:[["Plan","Básico"],["Secciones","1"],["Diseño","Responsivo"],["Entrega","5 días"],["Dominio y hosting","Aparte, $500"]],
+    priceLabel:"Plan Básico", price:"$3,500", tag:"Plan Básico · $3,500" },
+  { id:"invitacion", art:"inv", ar:0.5, glow:"#e8c77a", title:["Invitación","digital"],
+    desc:"Comparte tu evento por WhatsApp con una invitación que se ve bien en el celular. En el portafolio hay un ejemplo de boda.",
+    specs:[["Ejemplo en portafolio","Boda"],["Cotización","Por WhatsApp"]],
+    priceLabel:"", price:"A cotizar", tag:"A cotizar" },
+  { id:"java", art:"java", ar:1.35, glow:"#ff7a4d", title:["Asesorías en","Java"],
+    desc:"Te explico y te guío en tus proyectos y tareas, desde un ejercicio sencillo hasta el proyecto completo.",
+    specs:[["Sencillo","$150 a $350"],["Intermedio","$400 a $900"],["Proyecto completo","Desde $1,200"]],
+    priceLabel:"Desde", price:"$150", tag:"Desde $150" },
+  { id:"cpp", art:"cpp", ar:1.35, glow:"#6f9bff", title:["Asesorías en","C / C++"],
+    desc:"Te explico y te guío paso a paso en tus proyectos y tareas. Trabajo compatible con Dev-C++.",
+    specs:[["Sencillo","$150 a $350"],["Intermedio","$400 a $900"],["Proyecto completo","Desde $1,200"],["Compatible","Dev-C++"]],
+    priceLabel:"Desde", price:"$150", tag:"Desde $150" },
+  { id:"escolares", art:"doc", ar:0.85, glow:"#ffd24d", title:["Asesorías","escolares"],
+    desc:"Te ayudo con tareas y proyectos de la escuela y te acompaño hasta la entrega final.",
+    specs:[["Asesoría corta","Desde $100"],["Proyecto mediano","$350"],["Acompañamiento de proyecto final","$800"]],
+    priceLabel:"Desde", price:"$100", tag:"Desde $100" },
+  { id:"proyectos", art:"term", ar:1.5, glow:"#7ddc6b", title:["Otros","proyectos"],
+    desc:"Python, bases de datos, apps y automatizaciones. Cuéntame qué necesitas y lo vemos.",
+    specs:[["Python, scripts y automatizaciones","Desde $500"],["También","Bases de datos y apps"]],
+    priceLabel:"Desde", price:"$500", tag:"Desde $500" }
+];
+
+/* =====================================================================
+   MAQUETAS: dibujos en HTML/CSS de lo que hace cada servicio
+   ===================================================================== */
+const code = (file, lines, out) =>
+  `<div class="chrome"><i></i><i></i><i></i><span>${file}</span></div>
+   <pre>${lines.map(l => `<span>${l}</span>`).join("")}</pre>
+   <div class="out">${out}</div>`;
+
+const ART = {
+  cafe: () => `
+    <div class="chrome"><i></i><i></i><i></i><span>cafeterialocal.mx</span></div>
+    <div class="pg">
+      <nav><b>Café Local</b><span>Menú</span><span>Horarios</span><span class="cta">Pedir</span></nav>
+      <div class="hero"><div><h4>El café de <em>tu esquina</em></h4><p>Pan recién hecho y café de olla todos los días.</p></div><div class="cup"></div></div>
+      <div class="cards"><span>Café de olla</span><span>Pan dulce</span><span>Desayunos</span></div>
+    </div>`,
+  shop: () => `
+    <div class="chrome"><i></i><i></i><i></i><span>boutique.mx</span></div>
+    <div class="pg">
+      <nav><b>Boutique</b><span>Mujer</span><span>Nuevo</span><span class="cta">Bolsa 2</span></nav>
+      <div class="ban">Nueva colección<small>Ver todo</small></div>
+      <div class="grid">
+        <span style="--c:linear-gradient(160deg,#f6b4c4,#e0527f)">Vestido lino<em>$890</em></span>
+        <span style="--c:linear-gradient(160deg,#ffd9a8,#f08a4b)">Blusa sol<em>$520</em></span>
+        <span style="--c:linear-gradient(160deg,#c9d8ff,#6b86e6)">Falda azul<em>$640</em></span>
+        <span style="--c:linear-gradient(160deg,#d8f0d0,#5fae7a)">Saco verde<em>$1,150</em></span>
+      </div>
+    </div>`,
+  port: () => `
+    <div class="chrome"><i></i><i></i><i></i><span>marianaortiz.mx</span></div>
+    <div class="pg">
+      <div class="who"><div><small>Fotógrafa</small><h4>Mariana <em>Ortiz</em></h4></div><p>Retratos y bodas en la Ciudad de México.</p></div>
+      <div class="mos">
+        <span style="--c:linear-gradient(160deg,#2bb3a6,#0d3b37)"></span>
+        <span style="--c:linear-gradient(160deg,#f0b27a,#7a3b1a)"></span>
+        <span style="--c:linear-gradient(160deg,#9db4ff,#2a3a7a)"></span>
+        <span style="--c:linear-gradient(160deg,#e7c6d9,#7a3b5e)"></span>
+        <span style="--c:linear-gradient(160deg,#cfe6a8,#3d5a1f)"></span>
+      </div>
+    </div>`,
+  inv: () => `
+    <div class="scr"><i class="notch"></i>
+      <small>Nos casamos</small>
+      <div class="mono">A&amp;L</div>
+      <h4>Ana <em>&amp;</em> Luis</h4>
+      <p class="dt">12 · junio · 2027</p>
+      <div class="cd"><span><b>200</b>días</span><span><b>08</b>hrs</span><span><b>45</b>min</span><span><b>12</b>seg</span></div>
+      <span class="rsvp">Confirmar asistencia</span>
+      <p class="pl">Jardín Real · 6:00 pm</p>
+    </div>`,
+  java: () => code("Tabla.java", [
+    `<k>public class</k> <t>Tabla</t> {`,
+    `  <k>public static void</k> main(<t>String</t>[] a) {`,
+    `    <t>Scanner</t> sc = <k>new</k> <t>Scanner</t>(System.in);`,
+    `    System.out.print(<s>"Numero: "</s>);`,
+    `    <k>int</k> n = sc.nextInt();`,
+    `    <k>for</k> (<k>int</k> i = <n>1</n>; i &lt;= <n>10</n>; i++) {`,
+    `      System.out.println(n + <s>" x "</s> + i);`,
+    `    }`,
+    `  }`,
+    `}`], `Numero: <b>7</b><br>7 x 1<br>7 x 2`),
+  cpp: () => code("main.cpp", [
+    `<k>#include</k> <s>&lt;iostream&gt;</s>`,
+    `<k>using namespace</k> std;`,
+    ``,
+    `<k>int</k> main() {`,
+    `  <k>int</k> edad;`,
+    `  cout &lt;&lt; <s>"Edad: "</s>;`,
+    `  cin &gt;&gt; edad;`,
+    `  <k>if</k> (edad &gt;= <n>18</n>) {`,
+    `    cout &lt;&lt; <s>"Mayor de edad"</s>;`,
+    `  }`,
+    `  <k>return</k> <n>0</n>;`,
+    `}`], `Edad: <b>20</b><br>Mayor de edad`),
+  doc: () => `
+    <div class="note">Entrega: viernes</div>
+    <div class="pgd">
+      <small>Materia: Programación</small>
+      <h4>Proyecto <em>final</em></h4>
+      <ul><li class="ok">Planteamiento</li><li class="ok">Diagrama de flujo</li><li class="ok">Código en C++</li><li class="ok">Pruebas</li><li>Reporte</li><li>Entrega</li></ul>
+      <div class="prog"><i></i></div>
+    </div>`,
+  term: () => `
+    <div class="chrome"><i></i><i></i><i></i><span>terminal</span></div>
+    <div class="pg">
+      <pre><span class="p">$</span> python automatizar.py
+<span class="g">Leyendo ventas.xlsx...</span>
+<span class="g">248 filas procesadas</span>
+<span class="g">Reporte guardado</span> <span class="p">OK</span>
+<span class="p">$</span> _</pre>
+      <div class="tbl">
+        <div><span>id</span><span>cliente</span><span>total</span></div>
+        <div><span>1</span><span>Ana</span><span>1,200</span></div>
+        <div><span>2</span><span>Luis</span><span>850</span></div>
+        <div><span>3</span><span>Marta</span><span>2,300</span></div>
+        <div><span>4</span><span>Pablo</span><span>640</span></div>
+      </div>
+    </div>`
+};
+
+/* =====================================================================
+   SISTEMA: pared, cámara, detalle, lista de cotización y WhatsApp
+   ===================================================================== */
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const root = $("#showroom"), wall = $("#wall"), panel = $("#panel");
+  const N = ITEMS.length;
+  const pad = n => String(n).padStart(2, "0");
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+  const name = it => it.title.join(" ");
+  const wa = text => `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(text)}`;
+  const isMobile = () => matchMedia("(max-width:900px) and (orientation:portrait)").matches;
+
+  $("#brandName").textContent = CONFIG.brand;
+  $("#brandTag").textContent = CONFIG.tagline;
+  $("#note").textContent = CONFIG.note.split(". ")[0] + ". IVA si requieres factura.";
+  $("#bagNote").textContent = CONFIG.note;
+
+  /* ---- pared ---- */
+  wall.innerHTML = ITEMS.map((it, i) => `
+    <div class="cell" role="button" tabindex="0" data-i="${i}" style="--glow:${it.glow};--n:${i}" aria-label="Ver ${esc(name(it))} de cerca">
+      <i class="spot"></i>
+      <div class="ow"><div class="obj${it.art === "inv" ? " ph" : ""}" style="--ar:${it.ar}"><div class="face ${it.art}">${ART[it.art]()}</div></div></div>
+      <i class="shelf"></i>
+      <div class="tag"><b><i>${pad(i + 1)}</i>${esc(name(it))}</b><small>${esc(it.tag)}</small></div>
+    </div>`).join("");
+  const cells = [...wall.children];
+  const objs = cells.map(c => $(".obj", c));
+
+  /* ---- mi cotización ---- */
+  const KEY = CONFIG.storageKey;
+  const bag = new Set((() => { try { return JSON.parse(localStorage.getItem(KEY) || "[]").filter(id => ITEMS.some(i => i.id === id)); } catch (e) { return []; } })());
+  const saveBag = () => { try { localStorage.setItem(KEY, JSON.stringify([...bag])); } catch (e) {} };
+  const bagEl = $("#bag");
+
+  function renderBag(bump) {
+    const n = $("#bagN"); n.textContent = bag.size;
+    if (bump) { n.classList.remove("bump"); void n.offsetWidth; n.classList.add("bump"); }
+    const items = ITEMS.filter(i => bag.has(i.id));
+    $("#bagList").innerHTML = items.length
+      ? items.map(i => `<li><div><b>${esc(name(i))}</b><small>${esc(i.tag)}</small></div><button type="button" data-rm="${i.id}" aria-label="Quitar ${esc(name(i))}">×</button></li>`).join("")
+      : `<li class="empty">Todavía no agregas servicios. Abre una vitrina y toca «Agregar a mi cotización».</li>`;
+    const send = $("#bagSend");
+    send.setAttribute("aria-disabled", items.length ? "false" : "true");
+    send.href = items.length ? wa("Hola, quiero cotizar estos servicios:\n" + items.map(i => `- ${name(i)} (${i.tag})`).join("\n") + "\n\nLos vi en tu página.") : "#";
+    $("#bagClear").style.visibility = items.length ? "visible" : "hidden";
+  }
+  function setBag(open) {
+    if (open) root.dataset.bag = "1"; else delete root.dataset.bag;
+    bagEl.inert = !open;
+  }
+  function toggleItem(id) {
+    bag.has(id) ? bag.delete(id) : bag.add(id);
+    saveBag(); renderBag(true); syncToggle();
+  }
+
+  /* ---- panel de detalle ---- */
+  let cur = -1, lastFocus = null;
+  function panelHTML(i) {
+    const it = ITEMS[i];
+    return `
+      <div class="eyebrow"><i>${pad(i + 1)}</i> / ${pad(N)} · Vitrina</div>
+      <h2 class="ttl">${esc(it.title[0])}<em>${esc(it.title[1])}</em></h2>
+      <p class="desc">${esc(it.desc)}</p>
+      <dl class="specs">${it.specs.map(([a, b]) => `<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("")}</dl>
+      <div class="price">${it.priceLabel ? `<small>${esc(it.priceLabel)}</small>` : ""}<b>${esc(it.price)}</b>${it.price.startsWith("$") ? "<span>MXN</span>" : ""}</div>
+      <div class="ctas">
+        <a class="btn go" target="_blank" rel="noopener" href="${wa(`Hola, me interesa cotizar: ${name(it)} (${it.tag}). Lo vi en tu página.`)}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>
+          Cotizar este servicio</a>
+        <button class="btn alt" type="button" data-toggle="${it.id}" aria-pressed="false"><span class="lg"></span><span class="sm"></span></button>
+      </div>
+      <p class="fine">${esc(CONFIG.note)}</p>`;
+  }
+  function syncToggle() {
+    const b = $("[data-toggle]", panel); if (!b) return;
+    const on = bag.has(b.dataset.toggle);
+    b.setAttribute("aria-pressed", on);
+    b.setAttribute("aria-label", on ? "Quitar de mi cotización" : "Agregar a mi cotización");
+    $(".lg", b).textContent = on ? "Quitar de mi cotización" : "Agregar a mi cotización";
+    $(".sm", b).textContent = on ? "Quitar" : "Agregar";
+  }
+  function renderPanel() {
+    panel.innerHTML = panelHTML(cur); syncToggle();
+    panel.scrollTop = 0;
+    panel.classList.remove("in"); void panel.offsetWidth; panel.classList.add("in");
+    $("#count").innerHTML = `<b>${pad(cur + 1)}</b> / ${pad(N)}`;
+  }
+
+  /* ---- cámara: lleva la vitrina elegida al centro y la agranda ---- */
+  function aim() {
+    const sr = root.getBoundingClientRect(), W = sr.width, H = sr.height;
+    const wr = wall.getBoundingClientRect();
+    const t = getComputedStyle(wall).transform;
+    const k = t === "none" ? 1 : new DOMMatrixReadOnly(t).a;       // escala actual de la pared
+    const o = objs[cur].getBoundingClientRect();
+    const lw = o.width / k, lh = o.height / k;                    // medidas sin zoom
+    const cx = (o.left - wr.left) / k + lw / 2, cy = (o.top - wr.top) / k + lh / 2;
+    const m = isMobile();
+    const tx = m ? W * .5 : W * .665, ty = m ? H * .26 : H * .49;  // dónde queremos el objeto
+    const s = Math.min((m ? W * .74 : W * .46) / lw, (m ? H * .2 : H * .56) / lh);
+    wall.style.transform = `translate(${tx - cx * s}px,${ty - cy * s}px) scale(${s})`;
+  }
+  const jump = fn => { root.classList.add("jump"); fn(); requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("jump"))); };
+  const setHash = h => { try { if (location.hash !== "#" + h) location.hash = h; } catch (e) {} };
+
+  function open(i, opts = {}) {
+    const first = cur < 0;
+    cur = ((i % N) + N) % N;
+    if (first) lastFocus = document.activeElement;
+    root.dataset.open = "1";
+    root.style.setProperty("--tone", ITEMS[cur].glow);
+    cells.forEach((c, k) => c.classList.toggle("on", k === cur));
+    opts.instant ? jump(aim) : aim();
+    renderPanel();
+    if (!opts.fromHash) setHash(ITEMS[cur].id);
+  }
+  function close(fromHash) {
+    if (cur < 0) return;
+    cur = -1; delete root.dataset.open;
+    root.style.removeProperty("--tone");
+    cells.forEach(c => c.classList.remove("on"));
+    wall.style.transform = "";
+    if (!fromHash) setHash("galeria");
+    if (lastFocus && lastFocus.classList && lastFocus.classList.contains("cell")) lastFocus.focus({ preventScroll: true });
+  }
+  function route(initial) {
+    const i = ITEMS.findIndex(x => x.id === location.hash.slice(1));
+    if (i >= 0) { if (i !== cur) open(i, { fromHash: true, instant: initial }); }
+    else close(true);
+  }
+
+  /* ---- eventos ---- */
+  wall.addEventListener("click", e => { const c = e.target.closest(".cell"); if (c) open(+c.dataset.i); });
+  wall.addEventListener("keydown", e => {
+    const c = e.target.closest(".cell");
+    if (c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); open(+c.dataset.i); }
+  });
+  $("#back").addEventListener("click", () => close());
+  root.addEventListener("click", e => {
+    const g = e.target.closest("[data-go]"); if (g) open(cur + +g.dataset.go);
+    const t = e.target.closest("[data-toggle]"); if (t) toggleItem(t.dataset.toggle);
+    const r = e.target.closest("[data-rm]"); if (r) { bag.delete(r.dataset.rm); saveBag(); renderBag(); syncToggle(); }
+  });
+  $("#bagBtn").addEventListener("click", () => setBag(true));
+  $("#bagClose").addEventListener("click", () => setBag(false));
+  $("#scrim").addEventListener("click", () => setBag(false));
+  $("#bagClear").addEventListener("click", () => { bag.clear(); saveBag(); renderBag(); syncToggle(); });
+
+  addEventListener("keydown", e => {
+    if (root.dataset.bag) { if (e.key === "Escape") setBag(false); return; }
+    if (cur < 0) return;
+    if (e.key === "ArrowRight") open(cur + 1);
+    else if (e.key === "ArrowLeft") open(cur - 1);
+    else if (e.key === "Escape") close();
+  });
+
+  // deslizar con el dedo para cambiar de vitrina
+  let sx = 0, sy = 0, st = 0, sOk = false;
+  root.addEventListener("pointerdown", e => { sx = e.clientX; sy = e.clientY; st = Date.now(); sOk = !e.target.closest(".bag, .panel .btn, .pill"); });
+  root.addEventListener("pointerup", e => {
+    if (cur < 0 || !sOk) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4 && Date.now() - st < 700) open(cur + (dx < 0 ? 1 : -1));
+  });
+
+  // haz de luz que sigue al cursor
+  root.addEventListener("pointermove", e => {
+    if (e.pointerType !== "mouse") return;
+    const r = root.getBoundingClientRect();
+    root.style.setProperty("--mx", (e.clientX - r.left) + "px");
+    root.style.setProperty("--my", (e.clientY - r.top) + "px");
+    root.dataset.live = "1";
+  });
+  root.addEventListener("pointerleave", () => delete root.dataset.live);
+
+  addEventListener("resize", () => { if (cur >= 0) jump(aim); });
+  addEventListener("hashchange", () => route(false));
+
+  renderBag();
+  route(true);
+})();
+</script>
+<script id="extras-js">
+/* =====================================================================
+   EXTRAS (solo agregado): secciones nuevas para cada vitrina.
+   Edita aquí los textos. Usa ITEMS y CONFIG del script de arriba.
+   ===================================================================== */
+const EXTRAS = (() => {
+  const web = [["Me escribes por WhatsApp","Me cuentas qué necesitas y te doy una cotización."],["Acordamos lo que incluye","Confirmamos secciones, diseño y fecha de entrega."],["Revisas y te lo entrego","Hacemos los ajustes contigo y queda listo para publicar."]];
+  const ase = [["Me cuentas tu tarea o proyecto","Con el tema, la fecha de entrega y lo que ya llevas."],["Te explico paso a paso","Lo revisamos juntos para que entiendas lo que se hace."],["Llegas listo a la entrega","Pruebas y dudas resueltas antes de entregar."]];
+  const dom = ["¿Incluye dominio y hosting?","Van aparte: $500."];
+  const iva = ["¿Puedo pedir factura?","Sí. Se agrega IVA (16%)."];
+  const urg = ["¿Y si lo necesito urgente?","El trabajo urgente tiene un recargo de 30%."];
+  return {
+    negocio:{ t:"Ideal para", chips:["Cafeterías","Talleres","Estéticas","Consultorios","Tiendas locales"],
+      inc:["Hasta 5 secciones","Tienda o formulario de contacto","SEO básico","Botón de WhatsApp"], steps:web, faq:[dom,iva] },
+    tienda:{ t:"Ideal para", chips:["Ropa","Postres","Artesanías","Accesorios","Papelería"],
+      inc:["Tienda completa para vender en línea","Diseño personalizado, hecho a tu medida","1 mes de soporte"], steps:web, faq:[dom,urg] },
+    portafolio:{ t:"Ideal para", chips:["Fotografía","Diseño","Arquitectura","Música","Desarrollo"],
+      inc:["1 sección, limpia y directa","Diseño responsivo","Entrega en 5 días"], steps:web, faq:[dom,["¿Se ve bien en el celular?","Sí, el diseño es responsivo."]] },
+    invitacion:{ t:"Para tu evento", chips:["Bodas","XV años","Bautizos","Cumpleaños","Graduaciones"],
+      inc:["Se comparte por WhatsApp","Se ve bien en el celular","Como el ejemplo: cuenta regresiva y confirmar asistencia"], steps:web,
+      faq:[["¿Cuánto cuesta?","Se cotiza por WhatsApp según tu evento."],["¿Cómo la comparto?","Por WhatsApp, con un enlace."]] },
+    java:{ t:"Temas frecuentes", chips:["Ciclos","Arreglos","Métodos","Clases y objetos","Scanner"],
+      inc:["Sencillo: $150 a $350","Intermedio: $400 a $900","Proyecto completo: desde $1,200","Explicación paso a paso"], steps:ase,
+      faq:[["¿Qué tan grande puede ser mi tarea?","Desde un ejercicio sencillo hasta el proyecto completo."],urg] },
+    cpp:{ t:"Temas frecuentes", chips:["Condicionales","Ciclos","Funciones","Arreglos","Apuntadores"],
+      inc:["Sencillo: $150 a $350","Intermedio: $400 a $900","Proyecto completo: desde $1,200","Compatible con Dev-C++"], steps:ase,
+      faq:[["¿Funciona con Dev-C++?","Sí, el trabajo es compatible con Dev-C++."],urg] },
+    escolares:{ t:"Te ayudo con", chips:["Tareas","Proyectos","Reportes","Proyecto final"],
+      inc:["Asesoría corta: desde $100","Proyecto mediano: $350","Acompañamiento de proyecto final: $800"], steps:ase,
+      faq:[["¿Me acompañas hasta la entrega?","Sí, con el acompañamiento de proyecto final."],urg] },
+    proyectos:{ t:"Tipos de proyecto", chips:["Python","Scripts","Bases de datos","Apps","Automatizaciones"],
+      inc:["Python, scripts y automatizaciones: desde $500","Bases de datos y apps"], steps:ase,
+      faq:[["¿Y si no sé bien qué necesito?","Cuéntame y lo vemos."],iva] }
+  };
+})();
+
+(() => {
+  const panel = document.getElementById("panel");
+  const li = a => a.map(s => `<li>${s}</li>`).join("");
+  const sec = (k, h, body) => `<section class="x-sec" style="--k:${k}"><h3>${h}</h3>${body}</section>`;
+  const build = id => {
+    const it = ITEMS.find(i => i.id === id), x = EXTRAS[id], title = it.title.join(" ");
+    const wa = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent("Hola, tengo una duda sobre: " + title + ". Lo vi en tu página.")}`;
+    return sec(7, x.t, `<ul class="x-chips">${li(x.chips)}</ul>`)
+      + sec(8, "Qué incluye", `<ul class="x-list">${li(x.inc)}</ul>`)
+      + sec(9, "Cómo trabajamos", `<ol class="x-steps">${x.steps.map(([a, b]) => `<li><div><b>${a}</b><span>${b}</span></div></li>`).join("")}</ol>`)
+      + sec(10, "Preguntas frecuentes", `<div class="x-faq">${x.faq.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}</div>`)
+      + sec(11, "¿Dudas o una idea propia?", `<div class="x-ctas"><a class="btn go" target="_blank" rel="noopener" href="${wa}">Escríbeme por WhatsApp</a><button class="btn alt" type="button" data-idea="${id}">Explicar mi idea</button></div>`)
+      + `<button class="x-hint" type="button">Más abajo ↓</button>`;
+  };
+  const hint = () => panel.querySelector(".x-hint");
+  const sync = () => {
+    const h = hint(); if (!h) return;
+    h.hidden = panel.scrollHeight <= panel.clientHeight + 4;
+    h.textContent = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 8 ? "Volver arriba ↑" : "Más abajo ↓";
+  };
+  const decorate = () => {
+    const t = panel.querySelector("[data-toggle]"); if (!t) return;
+    const id = t.dataset.toggle; if (!EXTRAS[id]) return;
+    panel.dataset.skin = id;
+    if (panel.querySelector(".x-sec")) return;
+    panel.insertAdjacentHTML("beforeend", build(id));
+    sync();
+  };
+  panel.addEventListener("scroll", sync, { passive: true });
+  panel.addEventListener("click", e => {
+    if (!e.target.closest(".x-hint")) return;
+    const end = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 8;
+    panel.scrollTo({ top: end ? 0 : panel.scrollTop + panel.clientHeight * .8, behavior: "smooth" });
+  });
+  panel.addEventListener("toggle", sync, true);
+  addEventListener("resize", sync);
+  new MutationObserver(decorate).observe(panel, { childList: true });
+  decorate();
+})();
+</script>
+<script id="logo-head">(() => { const b = document.querySelector("#showroom .brand"); if (!b) return;
+  const box = document.createElement("div"); box.className = "st-id"; box.innerHTML = '<span class="lg-wrap" data-logo role="img" aria-label="Logo de DiseñoWeb MX"></span>'; b.before(box); box.append(b); })();</script>
+<script id="logo-js">
+/* LOGO ANIMADO (solo agregado). Dibuja el cubo en todo [data-logo]; no necesita archivo de imagen. */
+(() => {
+  const SVG = `<svg class="lg" viewBox="116 98 280 316" aria-hidden="true" focusable="false"><g class="lg-all"><g class="b bt"><polygon class="f t" points="256,117 376,186.5 256,256 136,186.5" fill="#7bd359"/><polygon class="s" style="--sd:0s" points="256,117 376,186.5 256,256 136,186.5"/></g><g class="b bl"><polygon class="f l" points="136,186.5 256,256 256,395 136,325.5" fill="#1d8ed0"/><polygon class="s" style="--sd:.36s" points="136,186.5 256,256 256,395 136,325.5"/></g><g class="b br"><polygon class="f r" points="376,186.5 256,256 256,395 376,325.5" fill="#0b7c76"/><polygon class="s" style="--sd:.18s" points="376,186.5 256,256 256,395 376,325.5"/></g><g class="lg-sock"><polygon points="256,196.7 316,231.3 316,300.7 256,335.3 196,300.7 196,231.3" fill="#f4faf8"/><g class="lg-spin"><polygon class="lg-core" points="256,226 285.9,243.2 285.9,277.8 256,295 226.1,277.8 226.1,243.2" fill="#f5a23c"/></g></g></g></svg>`;
+  document.querySelectorAll("[data-logo]").forEach(el => { el.innerHTML = SVG; });
+  const wraps = [...document.querySelectorAll(".lg-wrap")];
+  document.addEventListener("click", e => {
+    const w = e.target.closest(".lg-wrap"); if (!w) return;
+    const s = w.firstElementChild; s.classList.remove("flip"); void s.getBoundingClientRect(); s.classList.add("flip");
+  });
+  document.addEventListener("animationend", e => { if (e.animationName === "lgFlip") e.target.classList.remove("flip"); });
+  if (matchMedia("(hover:hover)").matches && !matchMedia("(prefers-reduced-motion:reduce)").matches) {
+    let raf = 0, x = 0, y = 0;
+    const cl = v => Math.max(-1, Math.min(1, v));
+    addEventListener("pointermove", e => {
+      if (e.pointerType !== "mouse") return; x = e.clientX; y = e.clientY;
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0;
+        wraps.forEach(w => { const r = w.getBoundingClientRect();
+          w.style.setProperty("--ry", cl((x - r.left - r.width / 2) / innerWidth * 2.2) * 22 + "deg");
+          w.style.setProperty("--rx", cl(-(y - r.top - r.height / 2) / innerHeight * 2.2) * 18 + "deg"); }); });
+    }, { passive: true });
+  }
+})();
+</script>
+<style id="chat">
+/* CHAT DE ATENCIÓN (solo agregado): botón flotante + ventana. Todo cuelga de .sr */
+.sr .ch-fab{position:absolute;z-index:6;right:clamp(16px,3vw,32px);bottom:22px;display:grid;place-items:center;width:42px;height:42px;padding:0;
+  border-radius:50%;background:var(--teal);color:var(--teal-ink);
+  box-shadow:0 8px 20px -8px #2bb3a6bb;transition:transform .2s,background .2s,opacity .3s}
+.sr .ch-fab span{display:none}
+.sr .ch-fab svg{width:19px;height:19px}
+.sr .ch-fab:hover{background:#3fd0c1;transform:translateY(-2px)}
+@media not all and (max-width:900px) and (orientation:portrait){.sr .foot{padding-right:calc(clamp(16px,4vw,48px) + 64px)}}
+.sr[data-chat] .ch-fab{opacity:0;pointer-events:none}
+.sr .ch-win{position:absolute;z-index:6;right:clamp(16px,3vw,32px);bottom:22px;width:min(372px,calc(100% - 32px));height:min(540px,calc(100% - 120px));
+  display:flex;flex-direction:column;border-radius:20px;overflow:hidden;background:#0f1514;border:1px solid var(--line);
+  box-shadow:0 30px 70px -20px #000;opacity:0;pointer-events:none;transform:translateY(16px) scale(.98);transform-origin:100% 100%;
+  transition:opacity .3s,transform .4s var(--ease)}
+.sr[data-chat] .ch-win{opacity:1;pointer-events:auto;transform:none}
+.sr .ch-head{display:flex;align-items:center;gap:12px;padding:14px 14px 14px 16px;border-bottom:1px solid var(--line);background:#ffffff08}
+.sr .ch-av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--teal);color:var(--teal-ink);font-weight:800;font-size:12px;letter-spacing:.04em}
+.sr .ch-head div{flex:1;min-width:0;display:grid;gap:2px}
+.sr .ch-head b{font-size:14px;font-weight:700}
+.sr .ch-head small{font-size:11.5px;color:var(--muted);line-height:1.3}
+.sr .ch-x{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);font-size:18px;line-height:1}
+.sr .ch-log{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:16px;display:flex;flex-direction:column;gap:10px;user-select:text;-webkit-user-select:text}
+.sr .ch-m{max-width:86%;padding:10px 13px;border-radius:16px;font-size:13.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;animation:rise .35s var(--ease) backwards}
+.sr .ch-m.bot{align-self:flex-start;background:#ffffff12;border-bottom-left-radius:5px}
+.sr .ch-m.me{align-self:flex-end;background:var(--teal);color:var(--teal-ink);font-weight:600;border-bottom-right-radius:5px}
+.sr .ch-m.typing{display:flex;gap:5px;padding:14px}
+.sr .ch-m.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:chdot 1s infinite}
+.sr .ch-m.typing i:nth-child(2){animation-delay:.15s}.sr .ch-m.typing i:nth-child(3){animation-delay:.3s}
+@keyframes chdot{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+.sr .ch-acts{align-self:flex-start;display:flex;flex-wrap:wrap;gap:8px;animation:rise .35s var(--ease) backwards}
+.sr .ch-acts .btn{height:38px;padding:0 15px;font-size:13px}
+.sr .ch-quick{flex:none;display:flex;gap:8px;overflow-x:auto;padding:4px 14px 10px;scrollbar-width:none}
+.sr .ch-quick::-webkit-scrollbar{display:none}
+.sr .ch-quick button{flex:none;padding:7px 13px;border-radius:999px;border:1px solid var(--line);font-size:12.5px;font-weight:600;white-space:nowrap;transition:border-color .2s,background .2s}
+.sr .ch-quick button:hover{border-color:var(--teal);background:#2bb3a61f}
+.sr .ch-form{flex:none;display:flex;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--line)}
+.sr .ch-form input{flex:1;min-width:0;height:44px;border-radius:999px;border:1px solid var(--line);background:#ffffff0d;color:var(--ink);
+  padding:0 16px;font:500 16px var(--display);user-select:text;-webkit-user-select:text}
+.sr .ch-form input::placeholder{color:var(--muted)}
+.sr .ch-form button{flex:none;width:44px;height:44px;border-radius:50%;background:var(--teal);color:var(--teal-ink);font-size:18px;font-weight:800}
+@media (max-width:900px) and (orientation:portrait){
+  .sr .ch-fab{right:12px;bottom:calc(10px + env(safe-area-inset-bottom));width:40px;height:40px}
+  .sr .ch-fab svg{width:18px;height:18px}
+  .sr .ch-win{left:10px;right:10px;width:auto;bottom:calc(10px + env(safe-area-inset-bottom));height:min(78%,560px)}
+}
+@media (max-height:520px){.sr .ch-win{height:calc(100% - 80px);bottom:12px}}
+</style>
+<script id="chat-js">
+/* =====================================================================
+   CHAT DE ATENCIÓN (solo agregado). Respuestas automáticas con los datos de
+   ITEMS y CONFIG; para todo lo demás pasa la conversación a tu WhatsApp.
+   Para cambiar respuestas, edita la lista RULES más abajo.
+   ===================================================================== */
+(() => {
+  const root = document.getElementById("showroom");
+  const wa = t => `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(t)}`;
+  const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const by = id => ITEMS.find(i => i.id === id);
+  const nm = it => it.title.join(" ");
+
+  root.insertAdjacentHTML("beforeend", `
+    <button class="ch-fab" id="chFab" type="button" aria-expanded="false" aria-controls="chWin" aria-label="Abrir chat de atención" title="Chat de atención">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Chat</span>
+    </button>
+    <section class="ch-win" id="chWin" role="dialog" aria-label="Chat de atención" inert>
+      <header class="ch-head"><span class="ch-av" aria-hidden="true">DW</span>
+        <div><b>Atención ${CONFIG.brand}</b><small>Respuestas automáticas. Atención personal por WhatsApp.</small></div>
+        <button class="ch-x" id="chClose" type="button" aria-label="Cerrar chat">×</button></header>
+      <div class="ch-log" id="chLog" role="log" aria-live="polite"></div>
+      <div class="ch-quick" id="chQuick"></div>
+      <form class="ch-form" id="chForm" autocomplete="off">
+        <input id="chIn" type="text" maxlength="200" placeholder="Escribe tu pregunta…" aria-label="Escribe tu pregunta" enterkeyhint="send">
+        <button type="submit" aria-label="Enviar">→</button></form>
+    </section>`);
+
+  const fab = document.getElementById("chFab"), win = document.getElementById("chWin"),
+        log = document.getElementById("chLog"), quick = document.getElementById("chQuick"),
+        form = document.getElementById("chForm"), input = document.getElementById("chIn");
+
+  /* ---- respuestas ---- */
+  const waAct = (label, msg) => ({ label, href: wa(msg), go: true });
+  const ideaAct = { label: "Explicar mi idea", idea: "" };
+  const itemReply = it => ({
+    text: `${nm(it)}\n${it.desc}\n\n` + it.specs.map(([a, b]) => `• ${a}: ${b}`).join("\n") + `\n\nPrecio: ${it.tag}`,
+    acts: [{ label: "Ver vitrina", hash: it.id }, waAct("Cotizar por WhatsApp", `Hola, me interesa cotizar: ${nm(it)} (${it.tag}). Lo vi en tu página.`)]
+  });
+  const RULES = [
+    [/whatsapp|humano|persona|asesor\b|hablar|contacto|llamar|atiende/, () => ({
+      text: "Claro, por WhatsApp te atiende directamente la persona que hace los proyectos.",
+      acts: [waAct("Abrir WhatsApp", "Hola, vengo del chat de tu página y quiero hablar contigo.")] })],
+    [/\bidea\b|explicar|personalizad|algo (diferente|distinto)/, () => ({
+      text: "Con gusto. Te guío con unas preguntas cortas y al final tu idea se manda ordenada a mi WhatsApp, para que entienda bien lo que quieres.",
+      acts: [ideaAct] })],
+    [/dominio|hosting|hospedaje/, () => ({ text: "El dominio y hosting van aparte: $500." })],
+    [/factura|iva|fiscal/, () => ({ text: "Sí puedes pedir factura. Se agrega IVA (16%)." })],
+    [/urgente|urgencia|rapido|prisa|para hoy|para manana/, () => ({ text: "El trabajo urgente tiene un recargo de 30%. Escríbeme por WhatsApp con tu fecha límite y lo revisamos.",
+      acts: [waAct("Contarle mi fecha límite", "Hola, necesito un trabajo urgente. Lo vi en tu página.")] })],
+    [/entrega|tarda|tiempo|cuando (estaria|esta|lo)|dias/, () => ({ text: "La entrega depende de lo que incluya el trabajo; la fecha se acuerda al confirmar secciones y diseño. El portafolio básico se entrega en 5 días." })],
+    [/como trabaj|proceso|pasos|como funciona/, () => ({ text: "Así trabajamos:\n1. Me escribes por WhatsApp y te doy una cotización.\n2. Acordamos lo que incluye: secciones, diseño y fecha de entrega.\n3. Revisas, hacemos ajustes contigo y queda listo para publicar." })],
+    [/soporte|garantia|mantenimiento/, () => ({ text: "La tienda en línea (Plan Premium) incluye 1 mes de soporte.", acts: [{ label: "Ver tienda en línea", hash: "tienda" }] })],
+    [/\bjava\b/, () => itemReply(by("java"))],
+    [/c\+\+|cpp|dev-?c|lenguaje c\b|\bc\b/, () => itemReply(by("cpp"))],
+    [/escolar|tarea|escuela|proyecto final|reporte/, () => itemReply(by("escolares"))],
+    [/invitacion|boda|\bxv\b|bautizo|cumple|evento|graduacion/, () => itemReply(by("invitacion"))],
+    [/tienda|vender|venta|ecommerce|en linea|premium/, () => itemReply(by("tienda"))],
+    [/portafolio|portfolio|fotograf|basico/, () => itemReply(by("portafolio"))],
+    [/python|base de datos|bases de datos|automatiz|script|\bapps?\b/, () => itemReply(by("proyectos"))],
+    [/negocio|cafeteria|taller|estetica|consultorio|pagina|sitio|web\b/, () => itemReply(by("negocio"))],
+    [/asesori|clases|programacion|programar/, () => ({
+      text: "Asesorías disponibles:\n" + ["java", "cpp", "escolares", "proyectos"].map(id => `• ${nm(by(id))}: ${by(id).tag}`).join("\n"),
+      acts: [{ label: "Ver asesorías en Java", hash: "java" }, { label: "Ver asesorías escolares", hash: "escolares" }] })],
+    [/precio|cuesta|costo|cuanto|tarifa|cotiz|presupuesto/, () => ({
+      text: "Estos son los precios:\n" + ITEMS.map(i => `• ${nm(i)}: ${i.tag}`).join("\n") + "\n\n" + CONFIG.note,
+      acts: [waAct("Pedir cotización", "Hola, quiero una cotización. Lo vi en tu página.")] })]
+  ];
+  const HELLO = /^(hola|holi|buen[oa]s?|hey|que tal|saludos)\b/;
+  /* Lo que la persona escribió (no los botones rápidos): se manda completo a tu WhatsApp */
+  const sent = [];
+  const handoff = raw => waAct("Enviar mi consulta por WhatsApp",
+    "Hola, vengo del chat de tu página. Mi consulta:\n" + (sent.length ? sent : [raw]).map(s => "- " + s).join("\n"));
+  /* "Muy específico" = mensaje largo (10 palabras o más) o algo que no está en las respuestas */
+  const isSpecific = raw => raw.trim().split(/\s+/).length >= 10;
+  const reply = raw => {
+    const q = norm(raw);
+    let r = null;
+    for (const [re, fn] of RULES) if (re.test(q)) { r = fn(); break; }
+    if (!r && HELLO.test(q)) return { text: "¡Hola! ¿Qué te gustaría saber? Puedes tocar una opción de abajo o escribir tu pregunta." };
+    if (!r) return { text: "Eso es muy específico para una respuesta automática. Puedo guiarte con unas preguntas cortas para explicar tu idea, o mandar tu consulta directo a mi WhatsApp (se envía ya escrita).",
+      acts: [ideaAct, handoff(raw)] };
+    if (isSpecific(raw)) {
+      r.text += "\n\nSi tu caso tiene detalles particulares, explícame tu idea paso a paso o mándame tu consulta por WhatsApp y te respondo directamente.";
+      r.acts = [...(r.acts || []).filter(a => !a.go), ideaAct, handoff(raw)];
+    }
+    return r;
+  };
+
+  /* ---- interfaz ---- */
+  const scroll = () => { log.scrollTop = log.scrollHeight; };
+  const bubble = (cls, text) => { const d = document.createElement("div"); d.className = "ch-m " + cls; d.textContent = text; log.append(d); scroll(); return d; };
+  const actions = acts => {
+    if (!acts || !acts.length) return;
+    const w = document.createElement("div"); w.className = "ch-acts";
+    acts.forEach(a => {
+      let el;
+      if (a.href) { el = document.createElement("a"); el.href = a.href; el.target = "_blank"; el.rel = "noopener"; el.className = "btn go"; }
+      else { el = document.createElement("button"); el.type = "button"; el.className = "btn alt"; el.addEventListener("click", () => { setChat(false); if (a.idea !== undefined) window.dwIdea && window.dwIdea(a.idea); else location.hash = a.hash; }); }
+      el.textContent = a.label; w.append(el);
+    });
+    log.append(w); scroll();
+  };
+  let busy = false;
+  const ask = (text, typed) => {
+    text = text.trim(); if (!text || busy) return;
+    if (typed) { sent.push(text); if (sent.length > 5) sent.shift(); }
+    bubble("me", text); busy = true;
+    const t = document.createElement("div"); t.className = "ch-m bot typing"; t.setAttribute("aria-label", "Escribiendo"); t.innerHTML = "<i></i><i></i><i></i>"; log.append(t); scroll();
+    setTimeout(() => { t.remove(); const r = reply(text); bubble("bot", r.text); actions(r.acts); busy = false; }, 450);
+  };
+
+  [["Explicar mi idea", "Explicar mi idea"], ["Precios", "Precios"], ["Página para mi negocio", "Página para mi negocio"], ["Tienda en línea", "Tienda en línea"], ["Invitación digital", "Invitación digital"],
+   ["Asesorías", "Asesorías"], ["Dominio y hosting", "Dominio y hosting"], ["Factura", "¿Puedo pedir factura?"], ["Hablar por WhatsApp", "Hablar por WhatsApp"]]
+    .forEach(([label, q]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = label; b.addEventListener("click", () => ask(q)); quick.append(b); });
+
+  let started = false;
+  function setChat(open) {
+    if (open) root.dataset.chat = "1"; else delete root.dataset.chat;
+    win.inert = !open; fab.setAttribute("aria-expanded", open);
+    if (open) {
+      if (!started) { started = true; bubble("bot", `¡Hola! Soy el asistente automático de ${CONFIG.brand}. Te puedo dar precios y resolver dudas rápidas. Si necesitas algo más, te atiende una persona por WhatsApp.`); }
+      if (!matchMedia("(pointer:coarse)").matches) input.focus({ preventScroll: true });
+    } else if (document.activeElement && win.contains(document.activeElement)) fab.focus({ preventScroll: true });
+  }
+  fab.addEventListener("click", () => setChat(true));
+  document.getElementById("chClose").addEventListener("click", () => setChat(false));
+  form.addEventListener("submit", e => { e.preventDefault(); const v = input.value; input.value = ""; ask(v, true); });
+
+  // que las flechas, el deslizar y Escape del chat no muevan la galería
+  ["keydown", "pointerdown", "pointerup"].forEach(ev => { win.addEventListener(ev, e => e.stopPropagation()); fab.addEventListener(ev, e => e.stopPropagation()); });
+  addEventListener("keydown", e => { if (e.key === "Escape" && root.dataset.chat) { setChat(false); e.stopImmediatePropagation(); } }, true);
+})();
+</script>
+<style id="idea-css">
+/* CUÉNTAME TU IDEA (solo agregado): panel lateral con preguntas cortas. Todo cuelga de .sr */
+.sr .idea-scrim{position:absolute;inset:0;z-index:8;background:#000000b3;opacity:0;pointer-events:none;transition:opacity .4s}
+.sr[data-idea] .idea-scrim{opacity:1;pointer-events:auto}
+.sr .idea{position:absolute;z-index:9;top:0;right:0;bottom:0;width:min(100%,460px);display:flex;flex-direction:column;background:#0f1514;
+  border-left:1px solid var(--line);transform:translateX(102%);transition:transform .5s var(--ease)}
+.sr[data-idea] .idea{transform:none}
+.sr .idea>header{flex:none;display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--line)}
+.sr .idea h3{font-weight:800;font-stretch:80%;text-transform:uppercase;letter-spacing:.08em;font-size:15px;outline:0}
+.sr .idea>header p{margin-top:6px;font-size:13px;line-height:1.45;color:var(--muted);max-width:36ch}
+.sr .idea .x{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);font-size:18px;line-height:1}
+.sr .idea-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:18px 20px 26px;display:grid;gap:22px;align-content:start;user-select:text;-webkit-user-select:text}
+.sr .idea .grp,.sr .idea label.f{display:grid;gap:9px}
+.sr .idea .lb{font-weight:600;font-size:14px}
+.sr .idea .lb small{display:block;margin-top:2px;font-weight:400;font-size:12px;color:var(--muted);line-height:1.4}
+.sr .idea .chips{display:flex;flex-wrap:wrap;gap:8px}
+.sr .idea .ic{padding:8px 14px;border-radius:999px;border:1px solid var(--line);font-size:13px;font-weight:600;transition:background .2s,border-color .2s,color .2s}
+.sr .idea .ic:hover{border-color:#ffffff55}
+.sr .idea .ic[aria-pressed="true"]{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+.sr .idea :is(textarea,input[type=text],input[type=date]){width:100%;border-radius:12px;border:1px solid var(--line);background:#ffffff0d;color:var(--ink);
+  padding:12px 14px;font:500 16px/1.4 var(--display);user-select:text;-webkit-user-select:text;color-scheme:dark}
+.sr .idea textarea{resize:vertical;min-height:112px}
+.sr .idea ::placeholder{color:var(--muted);opacity:1}
+.sr .idea :is(textarea,input):focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.sr .idea .cnt{justify-self:end;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sr .idea .chk{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.4}
+.sr .idea .chk input{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:var(--teal)}
+.sr .idea .chk small{display:block;color:var(--muted);font-size:12px}
+.sr .idea>footer{flex:none;display:grid;gap:10px;padding:14px 20px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#0f1514}
+.sr .idea>footer .btn[aria-disabled="true"]{opacity:.35;pointer-events:none}
+.sr .idea .fine{text-align:center}
+.sr .idea .clear{justify-self:center;font-size:12.5px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.sr .idea-pill svg{flex:none}
+.sr .bag .idea-link{align-self:center;text-align:center;font-size:13px;line-height:1.4;color:var(--teal);text-decoration:underline;text-underline-offset:3px}
+.sr .x-ctas{display:flex;flex-wrap:wrap;gap:10px}
+.sr .panel[data-skin=invitacion] .x-ctas{justify-content:center}
+/* celular vertical: botón compacto (solo la bombilla) y encabezado más ajustado para que quepa todo */
+@media (max-width:900px) and (orientation:portrait){
+  .sr .top{gap:8px}
+  .sr .st-id{gap:8px}
+  .lg-wrap{width:34px;height:38px}
+  .sr .acts{gap:8px}
+  .sr .idea-pill{width:38px;padding:0;justify-content:center;color:var(--teal);border-color:#2bb3a699;background:#2bb3a61f}
+  .sr .idea-pill .it{display:none}
+  .sr .idea-pill svg{width:18px;height:18px}
+  .sr #bagBtn{padding:0 11px;font-size:12.5px}
+  .sr:not([data-open]) .back{display:none}
+  .sr[data-open] .brand{display:none}
+}
+@media (max-width:359px){.sr .brand{display:none}}
+</style>
+<style id="movil-pantalla">
+/* PANTALLA COMPLETA EN CELULAR (solo agregado): la escena llega hasta el borde de abajo, detrás de la barra de Safari,
+   y todo lo que va abajo (flechas, chat, paneles) se sube lo que mide la barra para que no se tape ni se corte.
+   --bar = alto de pantalla completa menos alto visible. En PC vale 0 y no cambia nada. */
+.sr{--bar:0px}
+@supports (height:100lvh){.sr{--bar:calc(100lvh - 100dvh)}}
+@media (max-width:900px) and (orientation:portrait){
+  html,body{overflow:hidden;overscroll-behavior:none}
+  @supports (height:100lvh){html,body{height:100lvh}.sr{height:100lvh}}
+  .sr .wall{padding-bottom:calc(82px + env(safe-area-inset-bottom) + var(--bar))}
+  .sr .foot{bottom:var(--bar)}
+  /* las flechas de la vitrina abierta forman una barra sólida que llega hasta el borde de abajo */
+  .sr .pager{bottom:0;padding-bottom:calc(10px + env(safe-area-inset-bottom) + var(--bar));background:linear-gradient(#0d1413,#0a0f0e);border-top:1px solid var(--line)}
+  .sr .panel,.sr .panel[data-skin]{bottom:calc(66px + env(safe-area-inset-bottom) + var(--bar));max-height:calc(60% - 66px - env(safe-area-inset-bottom) - var(--bar))}
+  .sr .ch-fab{bottom:calc(10px + env(safe-area-inset-bottom) + var(--bar))}
+  .sr .ch-win{bottom:calc(10px + env(safe-area-inset-bottom) + var(--bar))}
+  .sr .bag{padding-bottom:calc(22px + env(safe-area-inset-bottom) + var(--bar))}
+  .sr .idea>footer{padding-bottom:calc(16px + env(safe-area-inset-bottom) + var(--bar))}
+
+  /* fondo: el brillo llega hasta el borde de abajo (se ve detrás de la barra de Safari) y la página
+     se pinta igual por fuera, para que no quede una franja negra */
+  html,body{background:radial-gradient(75% 24% at 50% 100%,#2bb3a64d,transparent 78%),radial-gradient(120% 90% at 50% -10%,#1b2724 0%,#0b0f0e 62%),#0b0f0e}
+  .sr .floor{left:-20%;right:-20%;bottom:-4%;height:38%;opacity:.8;
+    background:radial-gradient(65% 100% at 50% 100%,color-mix(in oklab,var(--tone) 78%,transparent),transparent 74%)}
+  .sr[data-open] .floor{opacity:.55}
+
+  /* barra de acceso de abajo (solo en la galería): llena el borde inferior con botones útiles */
+  .sr .foot{display:none}
+  .sr .dock{display:flex;position:absolute;z-index:4;left:0;right:0;bottom:0;gap:10px;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom) + var(--bar));
+    background:linear-gradient(#0d1413,#0a0f0e);border-top:1px solid var(--line);box-shadow:0 -14px 30px -12px #000a;
+    transition:opacity .4s,transform .5s var(--ease)}
+  .sr[data-open] .dock{opacity:0;pointer-events:none;transform:translateY(12px)}
+  .sr:not([data-open]) .ch-fab{display:none}
+  .sr .dk{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;height:54px;border-radius:14px;
+    border:1px solid var(--line);background:#ffffff0a;color:var(--ink);font:600 12px/1 var(--display);text-decoration:none;transition:background .2s}
+  .sr .dk:active{background:#ffffff1f}
+  .sr .dk svg{width:19px;height:19px;flex:none}
+  .sr .dk.go{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+}
+.sr .dock{display:none}
+@media (max-width:900px) and (orientation:portrait){.sr .dock{display:flex}}
+/* Abierta desde la pantalla de inicio (modo app): la barra de estado del celular queda encima de la página,
+   así que bajamos un poco el contenido para que no se tape */
+@media (display-mode:standalone){
+  .sr .top{padding-top:calc(20px + env(safe-area-inset-top))}
+  .sr .wall{padding-top:calc(96px + env(safe-area-inset-top))}
+}
+@media (display-mode:standalone) and (max-width:900px) and (orientation:portrait){
+  .sr .wall{padding-top:calc(80px + env(safe-area-inset-top))}
+}
+/* Celular en horizontal con muesca: que el contenido no quede debajo de ella */
+@media (orientation:landscape) and (max-width:900px){
+  .sr .top,.sr .foot{padding-left:max(clamp(16px,4vw,48px),env(safe-area-inset-left));padding-right:max(clamp(16px,4vw,48px),env(safe-area-inset-right))}
+  .sr .wall{padding-left:max(4vw,env(safe-area-inset-left));padding-right:max(4vw,env(safe-area-inset-right))}
+}
+</style>
+<script id="idea-js">
+/* =====================================================================
+   CUÉNTAME TU IDEA (solo agregado). Brief guiado: el cliente contesta unas
+   preguntas cortas y se arma un mensaje ordenado para tu WhatsApp.
+   Edita las opciones en OBJ y STY. Usa ITEMS y CONFIG del script de arriba.
+   ===================================================================== */
+(() => {
+  const root = document.getElementById("showroom");
+  const KEY = "dwmx-idea";
+  const OBJ = ["Vender", "Que me encuentren", "Mostrar mi trabajo", "Recibir mensajes o citas", "Entregar una tarea o proyecto"];
+  const STY = ["Moderno", "Elegante", "Colorido", "Minimalista", "Divertido", "Profesional"];
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const chips = (g, arr) => arr.map(([id, l]) => `<button type="button" class="ic" data-g="${g}" data-id="${esc(id)}" aria-pressed="false">${esc(l)}</button>`).join("");
+  const today = (() => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); })();
+
+  const pill = document.createElement("button");
+  pill.className = "pill idea-pill"; pill.type = "button"; pill.setAttribute("data-idea", ""); pill.setAttribute("aria-haspopup", "dialog");
+  pill.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span class="it">Cuéntame tu idea</span>';
+  pill.setAttribute("aria-label", "Cuéntame tu idea"); pill.title = "Cuéntame tu idea";
+  const bagBtn = document.getElementById("bagBtn"); bagBtn.before(pill);
+
+  root.insertAdjacentHTML("beforeend", `
+    <div class="idea-scrim" id="ideaScrim"></div>
+    <aside class="idea" id="idea" role="dialog" aria-labelledby="ideaT" inert>
+      <header><div><h3 id="ideaT" tabindex="-1">Cuéntame tu idea</h3>
+        <p>Contesta lo que sepas y deja en blanco lo demás. Al final se manda ordenado a mi WhatsApp para que entienda bien lo que quieres.</p></div>
+        <button class="x" id="ideaX" type="button" aria-label="Cerrar">×</button></header>
+      <form class="idea-body" id="ideaForm" autocomplete="off" novalidate>
+        <div class="grp" role="group" aria-labelledby="ig1"><span class="lb" id="ig1">¿Qué necesitas?<small>Puedes elegir más de uno.</small></span>
+          <div class="chips">${chips("tipo", [...ITEMS.map(i => [i.id, i.title.join(" ")]), ["otro", "Otro"]])}</div></div>
+        <label class="f"><span class="lb">Cuéntame tu idea con tus palabras<small>Sin tecnicismos. Por ejemplo: «Tengo una cafetería y quiero que mis clientes vean el menú y me pidan por WhatsApp».</small></span>
+          <textarea id="ideaTxt" rows="4" maxlength="500" placeholder="Escribe aquí tu idea…"></textarea><span class="cnt" id="ideaCnt">0 / 500</span></label>
+        <div class="grp" role="group" aria-labelledby="ig2"><span class="lb" id="ig2">¿Para qué la quieres?</span>
+          <div class="chips">${chips("obj", OBJ.map(o => [o, o]))}</div></div>
+        <div class="grp" role="group" aria-labelledby="ig3"><span class="lb" id="ig3">¿Cómo te la imaginas?</span>
+          <div class="chips">${chips("sty", STY.map(o => [o, o]))}</div></div>
+        <label class="f"><span class="lb">¿Algún ejemplo que te guste?<small>Un enlace o el nombre de una página, marca o cuenta.</small></span>
+          <input id="ideaEj" type="text" maxlength="120" placeholder="Opcional"></label>
+        <label class="f"><span class="lb">¿Para cuándo la necesitas?</span>
+          <input id="ideaFecha" type="date" min="${today}"></label>
+        <label class="chk"><input id="ideaUrg" type="checkbox"><span>Es urgente<small>El trabajo urgente tiene un recargo de 30%.</small></span></label>
+        <label class="f"><span class="lb">Tu nombre</span>
+          <input id="ideaNombre" type="text" maxlength="60" autocomplete="name" placeholder="Opcional"></label>
+      </form>
+      <footer>
+        <a class="btn go" id="ideaSend" href="#" target="_blank" rel="noopener" aria-disabled="true">Enviar mi idea por WhatsApp</a>
+        <p class="fine" id="ideaHelp">Escribe tu idea, aunque sea en una frase, para poder enviarla.</p>
+        <button class="clear" id="ideaClear" type="button">Borrar todo</button>
+      </footer>
+    </aside>`);
+
+  const $ = s => root.querySelector(s);
+  const drawer = $("#idea"), txt = $("#ideaTxt"), ej = $("#ideaEj"), fecha = $("#ideaFecha"), urg = $("#ideaUrg"), nombre = $("#ideaNombre"), send = $("#ideaSend");
+  const chipsOf = g => [...drawer.querySelectorAll(`.ic[data-g="${g}"]`)];
+  const picked = g => chipsOf(g).filter(b => b.getAttribute("aria-pressed") === "true");
+  const setChips = (g, ids) => chipsOf(g).forEach(b => b.setAttribute("aria-pressed", (ids || []).includes(b.dataset.id)));
+
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ t: picked("tipo").map(b => b.dataset.id), o: picked("obj").map(b => b.dataset.id),
+    s: picked("sty").map(b => b.dataset.id), idea: txt.value, ej: ej.value, fecha: fecha.value, urg: urg.checked, nombre: nombre.value })); } catch (e) {} };
+  const load = () => {
+    let d = {}; try { d = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) {}
+    setChips("tipo", d.t); setChips("obj", d.o); setChips("sty", d.s);
+    txt.value = d.idea || ""; ej.value = d.ej || ""; fecha.value = d.fecha && d.fecha >= today ? d.fecha : ""; urg.checked = !!d.urg; nombre.value = d.nombre || "";
+  };
+
+  const message = () => {
+    const t = picked("tipo").map(b => b.textContent), o = picked("obj").map(b => b.textContent), s = picked("sty").map(b => b.textContent);
+    const n = nombre.value.trim(), L = [`Hola${n ? ", soy " + n : ""}. Te cuento mi idea (la vi en tu página):`, ""];
+    if (t.length) L.push("Servicio: " + t.join(", "));
+    L.push("Mi idea: " + txt.value.trim());
+    if (o.length) L.push("Para qué: " + o.join(", "));
+    if (s.length) L.push("Estilo: " + s.join(", "));
+    if (ej.value.trim()) L.push("Ejemplo que me gusta: " + ej.value.trim());
+    if (fecha.value) L.push("Fecha: " + new Date(fecha.value + "T12:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }) + (urg.checked ? " (urgente)" : ""));
+    else if (urg.checked) L.push("Es urgente");
+    return L.join("\n");
+  };
+  const update = () => {
+    $("#ideaCnt").textContent = txt.value.length + " / 500";
+    const ok = txt.value.trim().length >= 10;
+    send.setAttribute("aria-disabled", ok ? "false" : "true");
+    send.href = ok ? `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(message())}` : "#";
+    $("#ideaHelp").style.display = ok ? "none" : "";
+  };
+
+  let last = null;
+  function open(id) {
+    last = document.activeElement;
+    delete root.dataset.bag; const bag = document.getElementById("bag"); if (bag) bag.inert = true;
+    if (root.dataset.chat) { const c = document.getElementById("chClose"); if (c) c.click(); }
+    load();
+    if (id) { const c = drawer.querySelector(`.ic[data-g="tipo"][data-id="${id}"]`); if (c) c.setAttribute("aria-pressed", "true"); }
+    else if (!picked("tipo").length) {
+      try { const ids = JSON.parse(localStorage.getItem(CONFIG.storageKey) || "[]"); chipsOf("tipo").forEach(b => { if (ids.includes(b.dataset.id)) b.setAttribute("aria-pressed", "true"); }); } catch (e) {}
+    }
+    update(); save();
+    root.dataset.idea = "1"; drawer.inert = false;
+    $("#ideaForm").scrollTop = 0;
+    if (matchMedia("(pointer:coarse)").matches) $("#ideaT").focus({ preventScroll: true }); else txt.focus({ preventScroll: true });
+  }
+  function close() {
+    delete root.dataset.idea; drawer.inert = true;
+    if (last && last.focus && document.contains(last)) last.focus({ preventScroll: true });
+  }
+  window.dwIdea = open;
+
+  document.addEventListener("click", e => { const t = e.target.closest("[data-idea]"); if (t) open(t.dataset.idea); });
+  $("#ideaX").addEventListener("click", close);
+  $("#ideaScrim").addEventListener("click", close);
+  drawer.addEventListener("click", e => { const b = e.target.closest(".ic"); if (!b) return; b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"); update(); save(); });
+  $("#ideaForm").addEventListener("input", () => { update(); save(); });
+  $("#ideaClear").addEventListener("click", () => { try { localStorage.removeItem(KEY); } catch (e) {} load(); update(); });
+
+  // que las flechas, el deslizar y Escape del formulario no muevan la galería
+  ["keydown", "pointerdown", "pointerup"].forEach(ev => drawer.addEventListener(ev, e => e.stopPropagation()));
+  addEventListener("keydown", e => { if (e.key === "Escape" && root.dataset.idea) { close(); e.stopImmediatePropagation(); } }, true);
+})();
+</script>
+<script id="dock-js">
+/* BARRA DE ACCESO (solo agregado): en celular vertical, abajo de la galería. Chat, Cuéntame tu idea y WhatsApp.
+   Cambia el mensaje de WhatsApp en el enlace de abajo. */
+(() => {
+  const root = document.getElementById("showroom");
+  const ico = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+  const wa = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent("Hola, vi tu página y me gustaría cotizar un proyecto.")}`;
+  root.insertAdjacentHTML("beforeend", `
+    <nav class="dock" aria-label="Contacto">
+      <button class="dk" id="dkChat" type="button">${ico("M4 5h16v11H9l-5 4z")}<span>Chat</span></button>
+      <button class="dk" type="button" data-idea="">${ico("M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z")}<span>Tu idea</span></button>
+      <a class="dk go" href="${wa}" target="_blank" rel="noopener">${ico("M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z")}<span>WhatsApp</span></a>
+    </nav>`);
+  document.getElementById("dkChat").addEventListener("click", () => { const f = document.getElementById("chFab"); if (f) f.click(); });
+  // que el deslizar y las flechas sobre la barra no muevan la galería
+  const dock = root.querySelector(".dock");
+  ["pointerdown", "pointerup"].forEach(ev => dock.addEventListener(ev, e => e.stopPropagation()));
+})();
+</script>
+</body>
+</html>
